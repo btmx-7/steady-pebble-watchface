@@ -395,11 +395,17 @@
 
     var encoded = encodeURIComponent(JSON.stringify(data));
 
-    if (typeof Pebble !== 'undefined') {
-      document.location = 'pebblejs://close#' + encoded;
-    } else {
-      alert('Saved! (Preview mode — no watch connected)');
-    }
+    // The Core Devices app intercepts this URL before it navigates; it
+    // does not inject a `window.Pebble` bridge object, so we can't
+    // feature-detect it. Fire the redirect unconditionally and only
+    // fall back to the preview alert if we're still on the page after
+    // a beat (i.e. nothing intercepted it, like a plain desktop browser).
+    document.location = 'pebblejs://close#' + encoded;
+    setTimeout(function() {
+      if (!document.hidden) {
+        alert('Saved! (Preview mode — no watch connected)');
+      }
+    }, 600);
   }
 </script>
 
