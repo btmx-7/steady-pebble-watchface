@@ -255,12 +255,11 @@ function dexcomLogin(callback) {
   var xhr = new XMLHttpRequest();
   var done = false;
   // The Android pkjs runtime executes inside a WebView, so cross-origin
-  // XHRs go through real browser CORS. A JSON Content-Type forces a CORS
-  // preflight that Dexcom's server (not designed for browser clients)
-  // doesn't answer, leaving the request hanging with neither onload nor
-  // onerror ever firing. Avoid the preflight by not overriding
-  // Content-Type, and add a watchdog so a CORS block still surfaces as a
-  // clear failure instead of hanging forever.
+  // XHRs go through real browser CORS. Dexcom requires Content-Type:
+  // application/json (a non-simple request, status 415 otherwise) but
+  // that forces a CORS preflight that Dexcom's server may not answer.
+  // The watchdog ensures a preflight failure surfaces as a clear log
+  // line instead of hanging silently.
   var watchdog = setTimeout(function() {
     if (done) return;
     done = true;
@@ -300,6 +299,7 @@ function dexcomLogin(callback) {
     callback(false);
   };
   xhr.open('POST', url);
+  xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Accept', 'application/json');
   xhr.send(body);
 }
