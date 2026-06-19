@@ -327,7 +327,12 @@ function dexcomFetchReadings() {
 }
 
 function fetchDexcom() {
-  if (!settings.dexcomUser || !settings.dexcomPass) return;
+  if (!settings.dexcomUser || !settings.dexcomPass) {
+    console.error('Steady: Dexcom fetch skipped, missing credentials (user=' +
+      (settings.dexcomUser ? 'set' : 'MISSING') + ', pass=' +
+      (settings.dexcomPass ? 'set' : 'MISSING') + ')');
+    return;
+  }
   if (s_dexcom_session_id) dexcomFetchReadings();
   else dexcomLogin(function(ok) { if (ok) dexcomFetchReadings(); });
 }
@@ -336,6 +341,7 @@ function fetchDexcom() {
 
 function fetchData() {
   loadSettings();
+  console.log('Steady: fetchData, dataSource=' + settings.dataSource);
   if (settings.dataSource === 'dexcom') fetchDexcom();
   else fetchNightscout();
 }
@@ -377,10 +383,14 @@ Pebble.addEventListener('showConfiguration', function() {
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
+  console.log('Steady: webviewclosed, response=' + (e.response ? 'present (' + e.response.length + ' chars)' : 'MISSING'));
   if (e.response) {
     try {
       var data = JSON.parse(decodeURIComponent(e.response));
       saveSettings(data);
+      console.log('Steady: settings saved, dataSource=' + settings.dataSource +
+        ', dexcomUser=' + (settings.dexcomUser ? 'set' : 'empty') +
+        ', dexcomPass=' + (settings.dexcomPass ? 'set' : 'empty'));
       // Send layout + slot settings to watch immediately
       var msg = {};
       msg[KEY_LAYOUT] = parseInt(data.layout) || 0;
