@@ -41,6 +41,8 @@ var TREND_MAP = {
   'DoubleDown':        6,
   'NOT COMPUTABLE':    7,
   'RATE OUT OF RANGE': 7,
+  'NotComputable':     7,
+  'RateOutOfRange':    7,
   'None':              7
 };
 
@@ -358,8 +360,15 @@ function dexcomFetchReadings() {
         if (!readings || readings.length === 0) return;
         var latest  = readings[0];
         var glucose = parseInt(latest.Value) || 0;
-        var trend   = parseInt(latest.Trend) - 1;
-        if (trend < 0 || trend > 6) trend = 7;
+        // Modern Dexcom Share returns Trend as a string name (e.g. "Flat");
+        // older versions returned a numeric code. Handle both.
+        var trend;
+        if (TREND_MAP[latest.Trend] !== undefined) {
+          trend = TREND_MAP[latest.Trend];
+        } else {
+          trend = parseInt(latest.Trend) - 1;
+          if (trend < 0 || trend > 6) trend = 7;
+        }
         var delta   = readings.length >= 2 ?
           glucose - (parseInt(readings[1].Value) || glucose) : 0;
         var lastRead = 0;
