@@ -5,7 +5,8 @@
  */
 
 // ─── Config page URL ─────────────────────────────────────────────────────────
-var CONFIG_URL = 'https://example.github.io/steady/config.html';
+// Hosted on the gh-pages branch of this repo.
+var CONFIG_URL = 'https://btmx-7.github.io/steady-pebble-watchface/config.html';
 
 // ─── AppMessage Key constants (must match main.c) ────────────────────────────
 var KEY_GLUCOSE_VALUE   = 0;
