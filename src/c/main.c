@@ -956,6 +956,7 @@ static void click_config_provider(void *context) {
 // ─── Pebble Health Callback ──────────────────────────────────────────────────
 
 static void prv_health_handler(HealthEventType event, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health event %d", (int)event);
   if (event == HealthEventHeartRateUpdate || event == HealthEventSignificantUpdate) {
     HealthValue hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
     if (hr > 0) s_heart_rate = (int)hr;
@@ -964,6 +965,7 @@ static void prv_health_handler(HealthEventType event, void *context) {
     HealthServiceAccessibilityMask mask =
       health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
     s_steps_available = (mask & HealthServiceAccessibilityMaskAvailable) != 0;
+    APP_LOG(APP_LOG_LEVEL_INFO, "Steady: steps_mask=%d, steps_available=%d", (int)mask, (int)s_steps_available);
     if (s_steps_available) {
       HealthValue steps = health_service_peek_current_value(HealthMetricStepCount);
       if (steps >= 0) s_step_count = (uint32_t)steps;
@@ -1410,9 +1412,12 @@ static void main_window_load(Window *window) {
   HealthServiceAccessibilityMask steps_mask =
     health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
   s_steps_available = (steps_mask & HealthServiceAccessibilityMaskAvailable) != 0;
+  APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health init, hr=%d, steps_mask=%d, steps_available=%d",
+          init_hr, (int)steps_mask, (int)s_steps_available);
   if (s_steps_available) {
     HealthValue init_steps = health_service_peek_current_value(HealthMetricStepCount);
     if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
+    APP_LOG(APP_LOG_LEVEL_INFO, "Steady: init_steps=%d", (int)init_steps);
   }
 
   // Apply initial layout
