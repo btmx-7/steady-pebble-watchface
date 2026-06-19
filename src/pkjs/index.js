@@ -253,7 +253,25 @@ function dexcomLogin(callback) {
     applicationId: DEXCOM_APP_ID
   });
   var xhr = new XMLHttpRequest();
+  var done = false;
+  // The Android pkjs runtime executes inside a WebView, so cross-origin
+  // XHRs go through real browser CORS. A JSON Content-Type forces a CORS
+  // preflight that Dexcom's server (not designed for browser clients)
+  // doesn't answer, leaving the request hanging with neither onload nor
+  // onerror ever firing. Avoid the preflight by not overriding
+  // Content-Type, and add a watchdog so a CORS block still surfaces as a
+  // clear failure instead of hanging forever.
+  var watchdog = setTimeout(function() {
+    if (done) return;
+    done = true;
+    console.error('Steady: Dexcom login timed out (likely CORS-blocked in WebView)');
+    xhr.abort();
+    callback(false);
+  }, 10000);
   xhr.onload = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
     if (xhr.status === 200) {
       var sessionId = xhr.responseText.replace(/"/g, '');
       // Dexcom returns HTTP 200 with an all-zero GUID for bad credentials
@@ -274,9 +292,14 @@ function dexcomLogin(callback) {
       callback(false);
     }
   };
-  xhr.onerror = function() { callback(false); };
+  xhr.onerror = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
+    console.error('Steady: Dexcom login network/CORS error, status=' + xhr.status);
+    callback(false);
+  };
   xhr.open('POST', url);
-  xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Accept', 'application/json');
   xhr.send(body);
 }
@@ -287,7 +310,17 @@ function dexcomFetchReadings() {
     '?sessionId=' + s_dexcom_session_id +
     '&minutes=180&maxCount=' + count;
   var xhr = new XMLHttpRequest();
+  var done = false;
+  var watchdog = setTimeout(function() {
+    if (done) return;
+    done = true;
+    console.error('Steady: Dexcom readings request timed out (likely CORS-blocked in WebView)');
+    xhr.abort();
+  }, 10000);
   xhr.onload = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
     if (xhr.status === 200) {
       if (!xhr.responseText) {
         // Empty body: session expired/invalid. Force a fresh login next time.
@@ -320,7 +353,12 @@ function dexcomFetchReadings() {
       fetchDexcom();
     }
   };
-  xhr.onerror = function() { console.error('Steady: Dexcom network error'); };
+  xhr.onerror = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
+    console.error('Steady: Dexcom readings network/CORS error, status=' + xhr.status);
+  };
   xhr.open('GET', url);
   xhr.setRequestHeader('Accept', 'application/json');
   xhr.send();
