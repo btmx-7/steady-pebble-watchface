@@ -28,6 +28,7 @@ var KEY_SLOT_0          = 13;
 var KEY_SLOT_1          = 14;
 var KEY_SLOT_2          = 15;
 var KEY_SLOT_3          = 16;
+var KEY_DEBUG_INFO      = 21;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -240,36 +241,92 @@ function fetchNightscout() {
 
 // ─── Dexcom Share Fetch ──────────────────────────────────────────────────────
 
+var DEXCOM_AUTH_URL     = '/ShareWebServices/Services/General/AuthenticatePublisherAccount';
+var DEXCOM_LOGIN_URL    = '/ShareWebServices/Services/General/LoginPublisherAccountById';
 var DEXCOM_READINGS_URL = '/ShareWebServices/Services/Publisher/ReadPublisherLatestGlucoseValues';
 var DEXCOM_APP_ID       = 'd89443d2-327c-4a6f-89e5-496bbb0317db';
+var DEXCOM_ZERO_GUID    = '00000000-0000-0000-0000-000000000000';
 var s_dexcom_session_id = null;
 var s_dexcom_base_url   = 'https://share2.dexcom.com';
 
-function dexcomLogin(callback) {
-  var url  = s_dexcom_base_url + '/ShareWebServices/Services/General/LoginPublisherAccountById';
-  var body = JSON.stringify({
-    accountName:   settings.dexcomUser,
-    password:      settings.dexcomPass,
-    applicationId: DEXCOM_APP_ID
-  });
+// POSTs `body` to `path` on the current Dexcom base URL with a 10s watchdog.
+// The Android pkjs runtime executes inside a WebView, so cross-origin XHRs
+// go through real browser CORS; the watchdog turns a hung preflight into a
+// clear log line instead of silence. Calls done(status, responseText), with
+// status 0 for a network/CORS error or timeout.
+function dexcomPost(path, body, done) {
+  var url = s_dexcom_base_url + path;
   var xhr = new XMLHttpRequest();
+  var finished = false;
+  var watchdog = setTimeout(function() {
+    if (finished) return;
+    finished = true;
+    console.error('Steady: Dexcom request to ' + path + ' timed out (likely CORS-blocked in WebView)');
+    xhr.abort();
+    done(0, '');
+  }, 10000);
   xhr.onload = function() {
-    if (xhr.status === 200) {
-      s_dexcom_session_id = xhr.responseText.replace(/"/g, '');
-      callback(true);
-    } else if (xhr.status === 500 && s_dexcom_base_url.indexOf('shareous') === -1) {
-      s_dexcom_base_url = 'https://shareous1.dexcom.com';
-      dexcomLogin(callback);
-    } else {
-      console.error('Steady: Dexcom login failed ' + xhr.status);
-      callback(false);
-    }
+    if (finished) return;
+    finished = true;
+    clearTimeout(watchdog);
+    done(xhr.status, xhr.responseText);
   };
-  xhr.onerror = function() { callback(false); };
+  xhr.onerror = function() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(watchdog);
+    console.error('Steady: Dexcom request to ' + path + ' network/CORS error');
+    done(0, '');
+  };
   xhr.open('POST', url);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.setRequestHeader('Accept', 'application/json');
   xhr.send(body);
+}
+
+// Dexcom Share login is two steps: AuthenticatePublisherAccount resolves the
+// username to an accountId, then LoginPublisherAccountById (which requires
+// that accountId, not the username) returns the session id. Skipping the
+// first step and passing the username directly as accountId is rejected
+// with an all-zero GUID, which looks identical to bad credentials.
+function dexcomLogin(callback, isRetry) {
+  var authBody = JSON.stringify({
+    accountName:   settings.dexcomUser,
+    password:      settings.dexcomPass,
+    applicationId: DEXCOM_APP_ID
+  });
+  dexcomPost(DEXCOM_AUTH_URL, authBody, function(status, text) {
+    var accountId = text ? text.replace(/"/g, '') : '';
+    if (status !== 200 || !accountId || accountId === DEXCOM_ZERO_GUID) {
+      if (!isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
+        console.error('Steady: Dexcom auth rejected on ' + s_dexcom_base_url + ' (status ' + status + '), retrying on OUS server');
+        s_dexcom_base_url = 'https://shareous1.dexcom.com';
+        dexcomLogin(callback, true);
+        return;
+      }
+      console.error('Steady: Dexcom authentication failed, status=' + status + ', response="' + text + '"');
+      s_dexcom_session_id = null;
+      callback(false);
+      return;
+    }
+
+    var loginBody = JSON.stringify({
+      accountId:     accountId,
+      password:      settings.dexcomPass,
+      applicationId: DEXCOM_APP_ID
+    });
+    dexcomPost(DEXCOM_LOGIN_URL, loginBody, function(status2, text2) {
+      var sessionId = text2 ? text2.replace(/"/g, '') : '';
+      if (status2 !== 200 || !sessionId || sessionId === DEXCOM_ZERO_GUID) {
+        console.error('Steady: Dexcom login failed, status=' + status2 + ', response="' + text2 + '"');
+        s_dexcom_session_id = null;
+        callback(false);
+        return;
+      }
+      s_dexcom_session_id = sessionId;
+      callback(true);
+    });
+  });
 }
 
 function dexcomFetchReadings() {
@@ -278,8 +335,24 @@ function dexcomFetchReadings() {
     '?sessionId=' + s_dexcom_session_id +
     '&minutes=180&maxCount=' + count;
   var xhr = new XMLHttpRequest();
+  var done = false;
+  var watchdog = setTimeout(function() {
+    if (done) return;
+    done = true;
+    console.error('Steady: Dexcom readings request timed out (likely CORS-blocked in WebView)');
+    xhr.abort();
+  }, 10000);
   xhr.onload = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
     if (xhr.status === 200) {
+      if (!xhr.responseText) {
+        // Empty body: session expired/invalid. Force a fresh login next time.
+        console.error('Steady: Dexcom empty response, response="' + xhr.responseText + '"');
+        s_dexcom_session_id = null;
+        return;
+      }
       try {
         var readings = JSON.parse(xhr.responseText);
         if (!readings || readings.length === 0) return;
@@ -298,21 +371,31 @@ function dexcomFetchReadings() {
         }
         sendToWatch(glucose, trend, delta, lastRead, graphData);
       } catch(e) {
-        console.error('Steady: Dexcom parse error: ' + e.message);
+        console.error('Steady: Dexcom parse error: ' + e.message + ', response="' + xhr.responseText + '"');
       }
     } else if (xhr.status === 500) {
       s_dexcom_session_id = null;
       fetchDexcom();
     }
   };
-  xhr.onerror = function() { console.error('Steady: Dexcom network error'); };
+  xhr.onerror = function() {
+    if (done) return;
+    done = true;
+    clearTimeout(watchdog);
+    console.error('Steady: Dexcom readings network/CORS error, status=' + xhr.status);
+  };
   xhr.open('GET', url);
   xhr.setRequestHeader('Accept', 'application/json');
   xhr.send();
 }
 
 function fetchDexcom() {
-  if (!settings.dexcomUser || !settings.dexcomPass) return;
+  if (!settings.dexcomUser || !settings.dexcomPass) {
+    console.error('Steady: Dexcom fetch skipped, missing credentials (user=' +
+      (settings.dexcomUser ? 'set' : 'MISSING') + ', pass=' +
+      (settings.dexcomPass ? 'set' : 'MISSING') + ')');
+    return;
+  }
   if (s_dexcom_session_id) dexcomFetchReadings();
   else dexcomLogin(function(ok) { if (ok) dexcomFetchReadings(); });
 }
@@ -321,6 +404,7 @@ function fetchDexcom() {
 
 function fetchData() {
   loadSettings();
+  console.log('Steady: fetchData, dataSource=' + settings.dataSource);
   if (settings.dataSource === 'dexcom') fetchDexcom();
   else fetchNightscout();
 }
@@ -337,7 +421,15 @@ Pebble.addEventListener('ready', function() {
 });
 
 Pebble.addEventListener('appmessage', function(e) {
-  console.log('Steady: message from watch');
+  var payload = e.payload || {};
+  // Key may come back as the numeric AppMessage key or the friendly
+  // messageKeys name depending on runtime — accept either.
+  var debugInfo = payload[KEY_DEBUG_INFO] || payload['KEY_DEBUG_INFO'];
+  if (debugInfo) {
+    console.log('Steady: health debug — ' + debugInfo);
+    return;
+  }
+  console.log('Steady: message from watch, payload=' + JSON.stringify(payload));
   fetchData();
 });
 
@@ -362,10 +454,14 @@ Pebble.addEventListener('showConfiguration', function() {
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
+  console.log('Steady: webviewclosed, response=' + (e.response ? 'present (' + e.response.length + ' chars)' : 'MISSING'));
   if (e.response) {
     try {
       var data = JSON.parse(decodeURIComponent(e.response));
       saveSettings(data);
+      console.log('Steady: settings saved, dataSource=' + settings.dataSource +
+        ', dexcomUser=' + (settings.dexcomUser ? 'set' : 'empty') +
+        ', dexcomPass=' + (settings.dexcomPass ? 'set' : 'empty'));
       // Send layout + slot settings to watch immediately
       var msg = {};
       msg[KEY_LAYOUT] = parseInt(data.layout) || 0;

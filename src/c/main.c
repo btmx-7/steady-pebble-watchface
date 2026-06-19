@@ -50,6 +50,9 @@
 // is unavailable (emulator). Safe to remove after screenshot workflow.
 #define KEY_MOCK_HR         19
 #define KEY_MOCK_STEPS      20
+// Debug relay: watch -> phone, so HealthService diagnostics show up in the
+// phone's logcat (native APP_LOG isn't reachable through adb on Android).
+#define KEY_DEBUG_INFO      21
 
 // ─── Persistence Keys ────────────────────────────────────────────────────────
 #define PERSIST_GLUCOSE     100
@@ -223,6 +226,7 @@ static int8_t  s_weather_tmax  = -128;  // daily max, -128 = unavailable
 static uint8_t s_weather_icon  = 7;     // default cloud
 static int     s_heart_rate    = 0;
 static uint32_t s_step_count   = 0;
+static bool    s_steps_available = false;  // 0 steps is a valid reading; this disambiguates "no data"
 
 // Alert state
 static AppTimer *s_alert_timer    = NULL;
@@ -514,15 +518,17 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       uint32_t steps = s_step_count;
       int norm = (int)(steps * 100 / 10000);
       if (norm > 100) norm = 100;
-      d->value_normalized = norm;
-      if (steps >= 1000)
+      d->value_normalized = s_steps_available ? norm : 0;
+      if (!s_steps_available)
+        snprintf(d->value_str, sizeof(d->value_str), "--");
+      else if (steps >= 1000)
         snprintf(d->value_str, sizeof(d->value_str), "%ldk", (unsigned long)(steps / 1000));
       else
         snprintf(d->value_str, sizeof(d->value_str), "%lu", (unsigned long)steps);
       snprintf(d->unit_str, sizeof(d->unit_str), "steps");
       d->icon_glyph = ICON_STEPS;
-      d->icon_filled = (steps > 0);
-      d->icon_color = (steps > 0) ? CLR_ICON_SUBTLE : CLR_STATE_INACTIVE;
+      d->icon_filled = (s_steps_available && steps > 0);
+      d->icon_color = (s_steps_available && steps > 0) ? CLR_ICON_SUBTLE : CLR_STATE_INACTIVE;
       break;
     }
     case SLOT_CGM: {
@@ -952,15 +958,59 @@ static void click_config_provider(void *context) {
 
 // ─── Pebble Health Callback ──────────────────────────────────────────────────
 
+// Relays a one-line health diagnostic to pkjs so it shows up in `adb logcat`
+// (native APP_LOG isn't reachable that way on Android — pkjs console.log is).
+// The watch's outbox is otherwise unused (this app only ever sends this one
+// kind of message), so any outbox failure can be safely assumed to be ours
+// and retried — covers the case where the outbox is still busy/settling
+// right after app launch and a debug send gets silently dropped.
+static int  s_init_steps_mask = 0;
+static char s_pending_debug[80];
+
+static void prv_resend_pending_debug(void *data) {
+  (void)data;
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) return;
+  dict_write_cstring(iter, KEY_DEBUG_INFO, s_pending_debug);
+  app_message_outbox_send();
+}
+
+static void prv_outbox_failed(DictionaryIterator *iter, AppMessageResult reason, void *context) {
+  (void)iter; (void)reason; (void)context;
+  app_timer_register(500, prv_resend_pending_debug, NULL);
+}
+
+static void prv_send_health_debug(const char *tag, int hr, int mask, int avail, int steps) {
+  snprintf(s_pending_debug, sizeof(s_pending_debug), "%s hr=%d mask=%d avail=%d steps=%d", tag, hr, mask, avail, steps);
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) {
+    app_timer_register(500, prv_resend_pending_debug, NULL);
+    return;
+  }
+  dict_write_cstring(iter, KEY_DEBUG_INFO, s_pending_debug);
+  app_message_outbox_send();
+}
+
 static void prv_health_handler(HealthEventType event, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health event %d", (int)event);
   if (event == HealthEventHeartRateUpdate || event == HealthEventSignificantUpdate) {
     HealthValue hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
     if (hr > 0) s_heart_rate = (int)hr;
   }
+  int mask = 0;
   if (event == HealthEventMovementUpdate || event == HealthEventSignificantUpdate) {
-    HealthValue steps = health_service_peek_current_value(HealthMetricStepCount);
-    if (steps >= 0) s_step_count = (uint32_t)steps;
+    mask = (int)health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
+    s_steps_available = (mask & HealthServiceAccessibilityMaskAvailable) != 0;
+    APP_LOG(APP_LOG_LEVEL_INFO, "Steady: steps_mask=%d, steps_available=%d", (int)mask, (int)s_steps_available);
+    if (s_steps_available) {
+      // sum() queries the aggregated Health DB directly; peek_current_value()
+      // can read 0 right after launch even when sum() already has today's
+      // total, since the live tracker hasn't "warmed up" yet.
+      HealthValue steps = health_service_sum(HealthMetricStepCount, time_start_of_today(), time(NULL));
+      if (steps >= 0) s_step_count = (uint32_t)steps;
+    }
   }
+  prv_send_health_debug("event", s_heart_rate, mask, (int)s_steps_available, (int)s_step_count);
   update_display();
 }
 
@@ -1393,7 +1443,23 @@ static void main_window_load(Window *window) {
   unobstructed_area_service_subscribe(ua, NULL);
 
   // ── Subscribe to Health ──
+  // Subscribing only delivers future events; without an initial peek the
+  // Steps/HR slots stay at their zero default until the next significant
+  // update fires (which can be minutes away).
   health_service_events_subscribe(prv_health_handler, NULL);
+  HealthValue init_hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
+  if (init_hr > 0) s_heart_rate = (int)init_hr;
+  HealthServiceAccessibilityMask steps_mask =
+    health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
+  s_steps_available = (steps_mask & HealthServiceAccessibilityMaskAvailable) != 0;
+  APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health init, hr=%d, steps_mask=%d, steps_available=%d",
+          init_hr, (int)steps_mask, (int)s_steps_available);
+  if (s_steps_available) {
+    HealthValue init_steps = health_service_sum(HealthMetricStepCount, time_start_of_today(), time(NULL));
+    if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
+    APP_LOG(APP_LOG_LEVEL_INFO, "Steady: init_steps=%d", (int)init_steps);
+  }
+  s_init_steps_mask = (int)steps_mask;
 
   // Apply initial layout
   GRect avail = layer_get_unobstructed_bounds(s_window_layer);
@@ -1552,7 +1618,12 @@ static void init(void) {
 
   app_message_register_inbox_received(inbox_received_handler);
   app_message_register_inbox_dropped(inbox_dropped_handler);
-  app_message_open(512, 128);
+  app_message_register_outbox_failed(prv_outbox_failed);
+  app_message_open(512, 256);
+
+  // Sent here (not from main_window_load) because the outbox isn't open yet
+  // when the window's .load handler runs.
+  prv_send_health_debug("init", s_heart_rate, s_init_steps_mask, (int)s_steps_available, (int)s_step_count);
 }
 
 static void deinit(void) {
