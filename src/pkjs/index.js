@@ -245,7 +245,7 @@ var DEXCOM_APP_ID       = 'd89443d2-327c-4a6f-89e5-496bbb0317db';
 var s_dexcom_session_id = null;
 var s_dexcom_base_url   = 'https://share2.dexcom.com';
 
-function dexcomLogin(callback) {
+function dexcomLogin(callback, isRetry) {
   var url  = s_dexcom_base_url + '/ShareWebServices/Services/General/LoginPublisherAccountById';
   var body = JSON.stringify({
     accountName:   settings.dexcomUser,
@@ -274,8 +274,16 @@ function dexcomLogin(callback) {
     if (xhr.status === 200) {
       var sessionId = xhr.responseText.replace(/"/g, '');
       // Dexcom returns HTTP 200 with an all-zero GUID for bad credentials
-      // instead of an error status.
+      // instead of an error status. Non-US accounts also get this rejection
+      // when queried against the US server (share2.dexcom.com) instead of
+      // the OUS server, so retry once against shareous1 before giving up.
       if (!sessionId || sessionId === '00000000-0000-0000-0000-000000000000') {
+        if (!isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
+          console.error('Steady: Dexcom login rejected on ' + s_dexcom_base_url + ', retrying on OUS server');
+          s_dexcom_base_url = 'https://shareous1.dexcom.com';
+          dexcomLogin(callback, true);
+          return;
+        }
         console.error('Steady: Dexcom login rejected (bad credentials), response="' + xhr.responseText + '"');
         s_dexcom_session_id = null;
         callback(false);
@@ -283,9 +291,9 @@ function dexcomLogin(callback) {
       }
       s_dexcom_session_id = sessionId;
       callback(true);
-    } else if (xhr.status === 500 && s_dexcom_base_url.indexOf('shareous') === -1) {
+    } else if (xhr.status === 500 && !isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
       s_dexcom_base_url = 'https://shareous1.dexcom.com';
-      dexcomLogin(callback);
+      dexcomLogin(callback, true);
     } else {
       console.error('Steady: Dexcom login failed ' + xhr.status + ', response="' + xhr.responseText + '"');
       callback(false);
