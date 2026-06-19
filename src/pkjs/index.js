@@ -255,13 +255,22 @@ function dexcomLogin(callback) {
   var xhr = new XMLHttpRequest();
   xhr.onload = function() {
     if (xhr.status === 200) {
-      s_dexcom_session_id = xhr.responseText.replace(/"/g, '');
+      var sessionId = xhr.responseText.replace(/"/g, '');
+      // Dexcom returns HTTP 200 with an all-zero GUID for bad credentials
+      // instead of an error status.
+      if (!sessionId || sessionId === '00000000-0000-0000-0000-000000000000') {
+        console.error('Steady: Dexcom login rejected (bad credentials), response="' + xhr.responseText + '"');
+        s_dexcom_session_id = null;
+        callback(false);
+        return;
+      }
+      s_dexcom_session_id = sessionId;
       callback(true);
     } else if (xhr.status === 500 && s_dexcom_base_url.indexOf('shareous') === -1) {
       s_dexcom_base_url = 'https://shareous1.dexcom.com';
       dexcomLogin(callback);
     } else {
-      console.error('Steady: Dexcom login failed ' + xhr.status);
+      console.error('Steady: Dexcom login failed ' + xhr.status + ', response="' + xhr.responseText + '"');
       callback(false);
     }
   };
@@ -280,6 +289,12 @@ function dexcomFetchReadings() {
   var xhr = new XMLHttpRequest();
   xhr.onload = function() {
     if (xhr.status === 200) {
+      if (!xhr.responseText) {
+        // Empty body: session expired/invalid. Force a fresh login next time.
+        console.error('Steady: Dexcom empty response, response="' + xhr.responseText + '"');
+        s_dexcom_session_id = null;
+        return;
+      }
       try {
         var readings = JSON.parse(xhr.responseText);
         if (!readings || readings.length === 0) return;
@@ -298,7 +313,7 @@ function dexcomFetchReadings() {
         }
         sendToWatch(glucose, trend, delta, lastRead, graphData);
       } catch(e) {
-        console.error('Steady: Dexcom parse error: ' + e.message);
+        console.error('Steady: Dexcom parse error: ' + e.message + ', response="' + xhr.responseText + '"');
       }
     } else if (xhr.status === 500) {
       s_dexcom_session_id = null;
