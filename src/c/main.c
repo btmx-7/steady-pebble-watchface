@@ -1003,7 +1003,10 @@ static void prv_health_handler(HealthEventType event, void *context) {
     s_steps_available = (mask & HealthServiceAccessibilityMaskAvailable) != 0;
     APP_LOG(APP_LOG_LEVEL_INFO, "Steady: steps_mask=%d, steps_available=%d", (int)mask, (int)s_steps_available);
     if (s_steps_available) {
-      HealthValue steps = health_service_peek_current_value(HealthMetricStepCount);
+      // sum() queries the aggregated Health DB directly; peek_current_value()
+      // can read 0 right after launch even when sum() already has today's
+      // total, since the live tracker hasn't "warmed up" yet.
+      HealthValue steps = health_service_sum(HealthMetricStepCount, time_start_of_today(), time(NULL));
       if (steps >= 0) s_step_count = (uint32_t)steps;
     }
   }
@@ -1452,7 +1455,7 @@ static void main_window_load(Window *window) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health init, hr=%d, steps_mask=%d, steps_available=%d",
           init_hr, (int)steps_mask, (int)s_steps_available);
   if (s_steps_available) {
-    HealthValue init_steps = health_service_peek_current_value(HealthMetricStepCount);
+    HealthValue init_steps = health_service_sum(HealthMetricStepCount, time_start_of_today(), time(NULL));
     if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
     APP_LOG(APP_LOG_LEVEL_INFO, "Steady: init_steps=%d", (int)init_steps);
   }
