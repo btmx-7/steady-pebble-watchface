@@ -42,7 +42,8 @@
       "KEY_WEATHER_TMIN":   17,
       "KEY_WEATHER_TMAX":   18,
       "KEY_MOCK_HR":        19,
-      "KEY_MOCK_STEPS":     20
+      "KEY_MOCK_STEPS":     20,
+      "KEY_DEBUG_INFO":     21
     },
     "resources": {
       "media": [

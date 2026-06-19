@@ -28,6 +28,7 @@ var KEY_SLOT_0          = 13;
 var KEY_SLOT_1          = 14;
 var KEY_SLOT_2          = 15;
 var KEY_SLOT_3          = 16;
+var KEY_DEBUG_INFO      = 21;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -420,6 +421,11 @@ Pebble.addEventListener('ready', function() {
 });
 
 Pebble.addEventListener('appmessage', function(e) {
+  var debugInfo = e.payload && e.payload[KEY_DEBUG_INFO];
+  if (debugInfo) {
+    console.log('Steady: health debug — ' + debugInfo);
+    return;
+  }
   console.log('Steady: message from watch');
   fetchData();
 });
