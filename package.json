@@ -18,7 +18,7 @@
     "displayName": "Steady",
     "uuid": "552fd91e-ad93-4d0f-ae44-74bc9d3108d6",
     "description": "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, and a built-in CGM widget. Glucose monitoring that fits in.",
-    "capabilities": ["configurable"],
+    "capabilities": ["configurable", "health"],
     "enableMultiJS": true,
     "longDescription": "Steady is a clean watchface that shows what matters. Large clock and 4 configurable widget slots.\n\nEach slot shows one data source:\n- Battery\n- Weather\n- Heart rate\n- Steps\n- Glucose\n\nThe CGM widget keeps glucose visible. It sits alongside your other data. It does not take over the design. This works for people living with diabetes who want a watchface that looks like a watchface, not a medical device.\n\nSupports Nightscout and Dexcom Share. Runs on Pebble Time 2 (Emery) and Pebble Round 2 (Gabbro).",
     "messageKeys": {
