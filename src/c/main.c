@@ -1393,7 +1393,14 @@ static void main_window_load(Window *window) {
   unobstructed_area_service_subscribe(ua, NULL);
 
   // ── Subscribe to Health ──
+  // Subscribing only delivers future events; without an initial peek the
+  // Steps/HR slots stay at their zero default until the next significant
+  // update fires (which can be minutes away).
   health_service_events_subscribe(prv_health_handler, NULL);
+  HealthValue init_hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
+  if (init_hr > 0) s_heart_rate = (int)init_hr;
+  HealthValue init_steps = health_service_peek_current_value(HealthMetricStepCount);
+  if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
 
   // Apply initial layout
   GRect avail = layer_get_unobstructed_bounds(s_window_layer);
