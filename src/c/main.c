@@ -960,14 +960,34 @@ static void click_config_provider(void *context) {
 
 // Relays a one-line health diagnostic to pkjs so it shows up in `adb logcat`
 // (native APP_LOG isn't reachable that way on Android — pkjs console.log is).
-static int s_init_steps_mask = 0;
+// The watch's outbox is otherwise unused (this app only ever sends this one
+// kind of message), so any outbox failure can be safely assumed to be ours
+// and retried — covers the case where the outbox is still busy/settling
+// right after app launch and a debug send gets silently dropped.
+static int  s_init_steps_mask = 0;
+static char s_pending_debug[80];
 
-static void prv_send_health_debug(const char *tag, int hr, int mask, int avail, int steps) {
+static void prv_resend_pending_debug(void *data) {
+  (void)data;
   DictionaryIterator *iter;
   if (app_message_outbox_begin(&iter) != APP_MSG_OK) return;
-  char buf[80];
-  snprintf(buf, sizeof(buf), "%s hr=%d mask=%d avail=%d steps=%d", tag, hr, mask, avail, steps);
-  dict_write_cstring(iter, KEY_DEBUG_INFO, buf);
+  dict_write_cstring(iter, KEY_DEBUG_INFO, s_pending_debug);
+  app_message_outbox_send();
+}
+
+static void prv_outbox_failed(DictionaryIterator *iter, AppMessageResult reason, void *context) {
+  (void)iter; (void)reason; (void)context;
+  app_timer_register(500, prv_resend_pending_debug, NULL);
+}
+
+static void prv_send_health_debug(const char *tag, int hr, int mask, int avail, int steps) {
+  snprintf(s_pending_debug, sizeof(s_pending_debug), "%s hr=%d mask=%d avail=%d steps=%d", tag, hr, mask, avail, steps);
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) {
+    app_timer_register(500, prv_resend_pending_debug, NULL);
+    return;
+  }
+  dict_write_cstring(iter, KEY_DEBUG_INFO, s_pending_debug);
   app_message_outbox_send();
 }
 
@@ -1595,6 +1615,7 @@ static void init(void) {
 
   app_message_register_inbox_received(inbox_received_handler);
   app_message_register_inbox_dropped(inbox_dropped_handler);
+  app_message_register_outbox_failed(prv_outbox_failed);
   app_message_open(512, 256);
 
   // Sent here (not from main_window_load) because the outbox isn't open yet

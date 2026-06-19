@@ -421,12 +421,15 @@ Pebble.addEventListener('ready', function() {
 });
 
 Pebble.addEventListener('appmessage', function(e) {
-  var debugInfo = e.payload && e.payload[KEY_DEBUG_INFO];
+  var payload = e.payload || {};
+  // Key may come back as the numeric AppMessage key or the friendly
+  // messageKeys name depending on runtime — accept either.
+  var debugInfo = payload[KEY_DEBUG_INFO] || payload['KEY_DEBUG_INFO'];
   if (debugInfo) {
     console.log('Steady: health debug — ' + debugInfo);
     return;
   }
-  console.log('Steady: message from watch');
+  console.log('Steady: message from watch, payload=' + JSON.stringify(payload));
   fetchData();
 });
 
