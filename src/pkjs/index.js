@@ -240,76 +240,92 @@ function fetchNightscout() {
 
 // ─── Dexcom Share Fetch ──────────────────────────────────────────────────────
 
+var DEXCOM_AUTH_URL     = '/ShareWebServices/Services/General/AuthenticatePublisherAccount';
+var DEXCOM_LOGIN_URL    = '/ShareWebServices/Services/General/LoginPublisherAccountById';
 var DEXCOM_READINGS_URL = '/ShareWebServices/Services/Publisher/ReadPublisherLatestGlucoseValues';
 var DEXCOM_APP_ID       = 'd89443d2-327c-4a6f-89e5-496bbb0317db';
+var DEXCOM_ZERO_GUID    = '00000000-0000-0000-0000-000000000000';
 var s_dexcom_session_id = null;
 var s_dexcom_base_url   = 'https://share2.dexcom.com';
 
+// POSTs `body` to `path` on the current Dexcom base URL with a 10s watchdog.
+// The Android pkjs runtime executes inside a WebView, so cross-origin XHRs
+// go through real browser CORS; the watchdog turns a hung preflight into a
+// clear log line instead of silence. Calls done(status, responseText), with
+// status 0 for a network/CORS error or timeout.
+function dexcomPost(path, body, done) {
+  var url = s_dexcom_base_url + path;
+  var xhr = new XMLHttpRequest();
+  var finished = false;
+  var watchdog = setTimeout(function() {
+    if (finished) return;
+    finished = true;
+    console.error('Steady: Dexcom request to ' + path + ' timed out (likely CORS-blocked in WebView)');
+    xhr.abort();
+    done(0, '');
+  }, 10000);
+  xhr.onload = function() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(watchdog);
+    done(xhr.status, xhr.responseText);
+  };
+  xhr.onerror = function() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(watchdog);
+    console.error('Steady: Dexcom request to ' + path + ' network/CORS error');
+    done(0, '');
+  };
+  xhr.open('POST', url);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.setRequestHeader('Accept', 'application/json');
+  xhr.send(body);
+}
+
+// Dexcom Share login is two steps: AuthenticatePublisherAccount resolves the
+// username to an accountId, then LoginPublisherAccountById (which requires
+// that accountId, not the username) returns the session id. Skipping the
+// first step and passing the username directly as accountId is rejected
+// with an all-zero GUID, which looks identical to bad credentials.
 function dexcomLogin(callback, isRetry) {
-  var url  = s_dexcom_base_url + '/ShareWebServices/Services/General/LoginPublisherAccountById';
-  var body = JSON.stringify({
+  var authBody = JSON.stringify({
     accountName:   settings.dexcomUser,
     password:      settings.dexcomPass,
     applicationId: DEXCOM_APP_ID
   });
-  var xhr = new XMLHttpRequest();
-  var done = false;
-  // The Android pkjs runtime executes inside a WebView, so cross-origin
-  // XHRs go through real browser CORS. Dexcom requires Content-Type:
-  // application/json (a non-simple request, status 415 otherwise) but
-  // that forces a CORS preflight that Dexcom's server may not answer.
-  // The watchdog ensures a preflight failure surfaces as a clear log
-  // line instead of hanging silently.
-  var watchdog = setTimeout(function() {
-    if (done) return;
-    done = true;
-    console.error('Steady: Dexcom login timed out (likely CORS-blocked in WebView)');
-    xhr.abort();
-    callback(false);
-  }, 10000);
-  xhr.onload = function() {
-    if (done) return;
-    done = true;
-    clearTimeout(watchdog);
-    if (xhr.status === 200) {
-      var sessionId = xhr.responseText.replace(/"/g, '');
-      // Dexcom returns HTTP 200 with an all-zero GUID for bad credentials
-      // instead of an error status. Non-US accounts also get this rejection
-      // when queried against the US server (share2.dexcom.com) instead of
-      // the OUS server, so retry once against shareous1 before giving up.
-      if (!sessionId || sessionId === '00000000-0000-0000-0000-000000000000') {
-        if (!isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
-          console.error('Steady: Dexcom login rejected on ' + s_dexcom_base_url + ', retrying on OUS server');
-          s_dexcom_base_url = 'https://shareous1.dexcom.com';
-          dexcomLogin(callback, true);
-          return;
-        }
-        console.error('Steady: Dexcom login rejected (bad credentials), response="' + xhr.responseText + '"');
+  dexcomPost(DEXCOM_AUTH_URL, authBody, function(status, text) {
+    var accountId = text ? text.replace(/"/g, '') : '';
+    if (status !== 200 || !accountId || accountId === DEXCOM_ZERO_GUID) {
+      if (!isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
+        console.error('Steady: Dexcom auth rejected on ' + s_dexcom_base_url + ' (status ' + status + '), retrying on OUS server');
+        s_dexcom_base_url = 'https://shareous1.dexcom.com';
+        dexcomLogin(callback, true);
+        return;
+      }
+      console.error('Steady: Dexcom authentication failed, status=' + status + ', response="' + text + '"');
+      s_dexcom_session_id = null;
+      callback(false);
+      return;
+    }
+
+    var loginBody = JSON.stringify({
+      accountId:     accountId,
+      password:      settings.dexcomPass,
+      applicationId: DEXCOM_APP_ID
+    });
+    dexcomPost(DEXCOM_LOGIN_URL, loginBody, function(status2, text2) {
+      var sessionId = text2 ? text2.replace(/"/g, '') : '';
+      if (status2 !== 200 || !sessionId || sessionId === DEXCOM_ZERO_GUID) {
+        console.error('Steady: Dexcom login failed, status=' + status2 + ', response="' + text2 + '"');
         s_dexcom_session_id = null;
         callback(false);
         return;
       }
       s_dexcom_session_id = sessionId;
       callback(true);
-    } else if (xhr.status === 500 && !isRetry && s_dexcom_base_url.indexOf('shareous') === -1) {
-      s_dexcom_base_url = 'https://shareous1.dexcom.com';
-      dexcomLogin(callback, true);
-    } else {
-      console.error('Steady: Dexcom login failed ' + xhr.status + ', response="' + xhr.responseText + '"');
-      callback(false);
-    }
-  };
-  xhr.onerror = function() {
-    if (done) return;
-    done = true;
-    clearTimeout(watchdog);
-    console.error('Steady: Dexcom login network/CORS error, status=' + xhr.status);
-    callback(false);
-  };
-  xhr.open('POST', url);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.setRequestHeader('Accept', 'application/json');
-  xhr.send(body);
+    });
+  });
 }
 
 function dexcomFetchReadings() {
