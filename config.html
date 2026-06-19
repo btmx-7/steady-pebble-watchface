@@ -344,8 +344,7 @@
     params[k] = decodeURIComponent(v);
   });
 
-  // Layout & slots
-  document.getElementById('layout').value   = params.layout || '0';
+  // Slots
   document.getElementById('slot0').value    = params.slot0  || '2';  // Weather
   document.getElementById('slot1').value    = params.slot1  || '1';  // Battery
   document.getElementById('slot2').value    = params.slot2  || '5';  // CGM
@@ -376,7 +375,7 @@
 
   function save() {
     var data = {
-      layout:      document.getElementById('layout').value,
+      layout:      '0',  // V1 ships Simple layout only
       slot0:       document.getElementById('slot0').value,
       slot1:       document.getElementById('slot1').value,
       slot2:       document.getElementById('slot2').value,
