@@ -223,6 +223,7 @@ static int8_t  s_weather_tmax  = -128;  // daily max, -128 = unavailable
 static uint8_t s_weather_icon  = 7;     // default cloud
 static int     s_heart_rate    = 0;
 static uint32_t s_step_count   = 0;
+static bool    s_steps_available = false;  // 0 steps is a valid reading; this disambiguates "no data"
 
 // Alert state
 static AppTimer *s_alert_timer    = NULL;
@@ -514,15 +515,17 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       uint32_t steps = s_step_count;
       int norm = (int)(steps * 100 / 10000);
       if (norm > 100) norm = 100;
-      d->value_normalized = norm;
-      if (steps >= 1000)
+      d->value_normalized = s_steps_available ? norm : 0;
+      if (!s_steps_available)
+        snprintf(d->value_str, sizeof(d->value_str), "--");
+      else if (steps >= 1000)
         snprintf(d->value_str, sizeof(d->value_str), "%ldk", (unsigned long)(steps / 1000));
       else
         snprintf(d->value_str, sizeof(d->value_str), "%lu", (unsigned long)steps);
       snprintf(d->unit_str, sizeof(d->unit_str), "steps");
       d->icon_glyph = ICON_STEPS;
-      d->icon_filled = (steps > 0);
-      d->icon_color = (steps > 0) ? CLR_ICON_SUBTLE : CLR_STATE_INACTIVE;
+      d->icon_filled = (s_steps_available && steps > 0);
+      d->icon_color = (s_steps_available && steps > 0) ? CLR_ICON_SUBTLE : CLR_STATE_INACTIVE;
       break;
     }
     case SLOT_CGM: {
@@ -958,8 +961,13 @@ static void prv_health_handler(HealthEventType event, void *context) {
     if (hr > 0) s_heart_rate = (int)hr;
   }
   if (event == HealthEventMovementUpdate || event == HealthEventSignificantUpdate) {
-    HealthValue steps = health_service_peek_current_value(HealthMetricStepCount);
-    if (steps >= 0) s_step_count = (uint32_t)steps;
+    HealthServiceAccessibilityMask mask =
+      health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
+    s_steps_available = (mask & HealthServiceAccessibilityMaskAvailable) != 0;
+    if (s_steps_available) {
+      HealthValue steps = health_service_peek_current_value(HealthMetricStepCount);
+      if (steps >= 0) s_step_count = (uint32_t)steps;
+    }
   }
   update_display();
 }
@@ -1399,8 +1407,13 @@ static void main_window_load(Window *window) {
   health_service_events_subscribe(prv_health_handler, NULL);
   HealthValue init_hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
   if (init_hr > 0) s_heart_rate = (int)init_hr;
-  HealthValue init_steps = health_service_peek_current_value(HealthMetricStepCount);
-  if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
+  HealthServiceAccessibilityMask steps_mask =
+    health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
+  s_steps_available = (steps_mask & HealthServiceAccessibilityMaskAvailable) != 0;
+  if (s_steps_available) {
+    HealthValue init_steps = health_service_peek_current_value(HealthMetricStepCount);
+    if (init_steps >= 0) s_step_count = (uint32_t)init_steps;
+  }
 
   // Apply initial layout
   GRect avail = layer_get_unobstructed_bounds(s_window_layer);
