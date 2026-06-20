@@ -125,8 +125,9 @@ typedef enum {
   VIBE_TYPE_SHORT_PULSE  = 1,
   VIBE_TYPE_LONG_PULSE   = 2,
   VIBE_TYPE_DOUBLE_PULSE = 3,
-  VIBE_TYPE_TAP          = 4   // shorter/weaker than SHORT_PULSE; no OS primitive
+  VIBE_TYPE_TAP          = 4,  // shorter/weaker than SHORT_PULSE; no OS primitive
                                 // for this, so it's a custom single-segment pattern
+  VIBE_TYPE_NUDGE_NUDGE  = 5   // two TAP-strength pulses back to back
 } VibeType;
 
 // ─── Material Symbols UTF-8 Glyph Constants ─────────────────────────────────
@@ -875,6 +876,12 @@ static void fire_vibe_type(int32_t vibe_type) {
     case VIBE_TYPE_TAP: {
       static const uint32_t tap_duration[] = { 40 };
       VibePattern pat = { .durations = tap_duration, .num_segments = 1 };
+      vibes_enqueue_custom_pattern(pat);
+      break;
+    }
+    case VIBE_TYPE_NUDGE_NUDGE: {
+      static const uint32_t nudge_durations[] = { 40, 100, 40 };
+      VibePattern pat = { .durations = nudge_durations, .num_segments = 3 };
       vibes_enqueue_custom_pattern(pat);
       break;
     }
