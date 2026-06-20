@@ -41,3 +41,10 @@ The settings page MUST let the user turn glucose threshold vibration alerts on o
 - **WHEN** "Threshold Alerts" is off
 - **THEN** the 4 vibration selects are hidden while the threshold value inputs remain visible and editable
 
+#### Scenario: User test-fires a vibration type before saving
+
+- **WHEN** the user changes any of the 4 vibration selects
+- **THEN** the settings page sends a `KEY_TEST_VIBE` AppMessage (independent of the Save flow) carrying the newly selected vibe type
+- **AND** the watch fires that vibe type immediately without persisting it or touching any other setting
+- **AND** if the page is opened outside the Pebble app's webview (no `Pebble.sendAppMessage` available), the picker still works for selecting a value to save, it just doesn't test-fire
+

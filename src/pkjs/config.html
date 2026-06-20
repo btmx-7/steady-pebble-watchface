@@ -111,7 +111,7 @@
       gap: 0;
     }
     .threshold-row + .threshold-row { border-top: 1px solid #2a2a2a; }
-    .threshold-row .field { border-right: 1px solid #2a2a2a; }
+    .threshold-row .field { border-right: 1px solid #2a2a2a; border-bottom: 0; }
     .threshold-row .field:last-child { border-right: none; }
     .slot-grid {
       display: grid;
@@ -421,6 +421,19 @@
     });
   });
   document.getElementById('alertsEnabled').dispatchEvent(new Event('change'));
+
+  // Fire the chosen vibe type on the watch right away, so the user can feel
+  // it before saving. Only works if this page is running inside the Pebble
+  // app's webview (it has no effect, e.g., in a plain desktop preview).
+  var KEY_TEST_VIBE = 27;
+  ['vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      if (typeof Pebble === 'undefined' || !Pebble.sendAppMessage) return;
+      var msg = {};
+      msg[KEY_TEST_VIBE] = parseInt(this.value, 10);
+      Pebble.sendAppMessage(msg, function() {}, function() {});
+    });
+  });
 
   function save() {
     var data = {

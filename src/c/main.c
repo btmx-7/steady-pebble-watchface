@@ -58,6 +58,9 @@
 #define KEY_VIBE_HIGH        24
 #define KEY_VIBE_URGENT_LOW  25
 #define KEY_VIBE_URGENT_HIGH 26
+// Sent alone by the config page (not bundled with settings) to fire a vibe
+// type immediately, so the user can feel it before saving.
+#define KEY_TEST_VIBE        27
 
 // ─── Persistence Keys ────────────────────────────────────────────────────────
 #define PERSIST_GLUCOSE     100
@@ -917,6 +920,14 @@ void prv_layout_for_bounds(GRect bounds);
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *t;
+
+  // Config page sends this alone (no other keys) to preview a vibe type
+  // before the user hits Save. Fire it and bail before touching settings.
+  t = dict_find(iter, KEY_TEST_VIBE);
+  if (t) {
+    fire_vibe_type(t->value->int32);
+    return;
+  }
 
   t = dict_find(iter, KEY_GLUCOSE_VALUE);  if (t) s_glucose        = t->value->int32;
   t = dict_find(iter, KEY_GLUCOSE_TREND);  if (t) s_trend          = t->value->int32;
