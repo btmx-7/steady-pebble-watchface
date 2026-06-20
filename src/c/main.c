@@ -53,6 +53,14 @@
 // Debug relay: watch -> phone, so HealthService diagnostics show up in the
 // phone's logcat (native APP_LOG isn't reachable through adb on Android).
 #define KEY_DEBUG_INFO      21
+#define KEY_ALERTS_ENABLED  22
+#define KEY_VIBE_LOW         23
+#define KEY_VIBE_HIGH        24
+#define KEY_VIBE_URGENT_LOW  25
+#define KEY_VIBE_URGENT_HIGH 26
+// Sent alone by the config page (not bundled with settings) to fire a vibe
+// type immediately, so the user can feel it before saving.
+#define KEY_TEST_VIBE        27
 
 // ─── Persistence Keys ────────────────────────────────────────────────────────
 #define PERSIST_GLUCOSE     100
@@ -73,6 +81,11 @@
 #define PERSIST_WEATHER_ICN 115
 #define PERSIST_WEATHER_MIN 116
 #define PERSIST_WEATHER_MAX 117
+#define PERSIST_ALERTS_ON       118
+#define PERSIST_VIBE_LOW        119
+#define PERSIST_VIBE_HIGH       120
+#define PERSIST_VIBE_URGENT_LOW 121
+#define PERSIST_VIBE_URGENT_HIGH 122
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -109,6 +122,16 @@ typedef enum {
   SLOT_STEPS     = 4,
   SLOT_CGM       = 5
 } SlotType;
+
+typedef enum {
+  VIBE_TYPE_NONE         = 0,
+  VIBE_TYPE_SHORT_PULSE  = 1,
+  VIBE_TYPE_LONG_PULSE   = 2,
+  VIBE_TYPE_DOUBLE_PULSE = 3,
+  VIBE_TYPE_TAP          = 4,  // shorter/weaker than SHORT_PULSE; no OS primitive
+                                // for this, so it's a custom single-segment pattern
+  VIBE_TYPE_NUDGE_NUDGE  = 5   // two TAP-strength pulses back to back
+} VibeType;
 
 // ─── Material Symbols UTF-8 Glyph Constants ─────────────────────────────────
 // Codepoints verified via fonttools extraction from MaterialSymbolsRounded TTF.
@@ -194,6 +217,11 @@ typedef struct {
   int32_t     low_thresh;
   int32_t     urgent_high;
   int32_t     urgent_low;
+  bool        alerts_enabled;
+  int32_t     vibe_low;
+  int32_t     vibe_high;
+  int32_t     vibe_urgent_low;
+  int32_t     vibe_urgent_high;
   WatchLayout layout;
   SlotType    slots[4];  // 0=TL/Left, 1=TR/Center, 2=BL/Right, 3=BR (Simple only)
 } WatchSettings;
@@ -204,6 +232,11 @@ static WatchSettings s_settings = {
   .low_thresh  = 70,
   .urgent_high = 250,
   .urgent_low  = 55,
+  .alerts_enabled   = true,
+  .vibe_low         = VIBE_TYPE_SHORT_PULSE,
+  .vibe_high        = VIBE_TYPE_SHORT_PULSE,
+  .vibe_urgent_low  = VIBE_TYPE_DOUBLE_PULSE,
+  .vibe_urgent_high = VIBE_TYPE_DOUBLE_PULSE,
   .layout      = LAYOUT_SIMPLE,
   .slots       = { SLOT_WEATHER, SLOT_BATTERY, SLOT_CGM, SLOT_HEART_RATE }
 };
@@ -832,14 +865,46 @@ static void update_time(void) {
   update_display();
 }
 
-// ─── Urgent Vibe Pattern ─────────────────────────────────────────────────────
-// Urgent glucose alerts only vibrate; the screen stays in its normal render
-// (the danger color + trend arrow already signal the state visually).
+// ─── Threshold Alert Vibes ────────────────────────────────────────────────────
+// Glucose alerts only vibrate; the screen stays in its normal render (the
+// danger/warning color + trend arrow already signal the state visually).
+// Each of the 4 thresholds (low/high/urgent low/urgent high) picks its own
+// OS-native vibration type independently, gated by s_settings.alerts_enabled.
 
-static void fire_urgent_vibe(void) {
-  static const uint32_t segs[] = { 300, 200, 300, 200, 300 };
-  VibePattern pat = { .durations = segs, .num_segments = 5 };
-  vibes_enqueue_custom_pattern(pat);
+static void fire_vibe_type(int32_t vibe_type) {
+  switch (vibe_type) {
+    case VIBE_TYPE_SHORT_PULSE:  vibes_short_pulse();  break;
+    case VIBE_TYPE_LONG_PULSE:   vibes_long_pulse();   break;
+    case VIBE_TYPE_DOUBLE_PULSE: vibes_double_pulse(); break;
+    case VIBE_TYPE_TAP: {
+      static const uint32_t tap_duration[] = { 40 };
+      VibePattern pat = { .durations = tap_duration, .num_segments = 1 };
+      vibes_enqueue_custom_pattern(pat);
+      break;
+    }
+    case VIBE_TYPE_NUDGE_NUDGE: {
+      static const uint32_t nudge_durations[] = { 40, 100, 40 };
+      VibePattern pat = { .durations = nudge_durations, .num_segments = 3 };
+      vibes_enqueue_custom_pattern(pat);
+      break;
+    }
+    case VIBE_TYPE_NONE:
+    default: break;
+  }
+}
+
+static void fire_alert_vibe(GlucoseZone zone) {
+  if (!s_settings.alerts_enabled) return;
+
+  int32_t vibe_type;
+  switch (zone) {
+    case ZONE_LOW:         vibe_type = s_settings.vibe_low;         break;
+    case ZONE_HIGH:        vibe_type = s_settings.vibe_high;        break;
+    case ZONE_URGENT_LOW:  vibe_type = s_settings.vibe_urgent_low;  break;
+    case ZONE_URGENT_HIGH: vibe_type = s_settings.vibe_urgent_high; break;
+    default: return;
+  }
+  fire_vibe_type(vibe_type);
 }
 
 // ─── Tick Handler ────────────────────────────────────────────────────────────
@@ -856,6 +921,14 @@ void prv_layout_for_bounds(GRect bounds);
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *t;
 
+  // Config page sends this alone (no other keys) to preview a vibe type
+  // before the user hits Save. Fire it and bail before touching settings.
+  t = dict_find(iter, KEY_TEST_VIBE);
+  if (t) {
+    fire_vibe_type(t->value->int32);
+    return;
+  }
+
   t = dict_find(iter, KEY_GLUCOSE_VALUE);  if (t) s_glucose        = t->value->int32;
   t = dict_find(iter, KEY_GLUCOSE_TREND);  if (t) s_trend          = t->value->int32;
   t = dict_find(iter, KEY_GLUCOSE_DELTA);  if (t) s_delta          = t->value->int32;
@@ -865,6 +938,11 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, KEY_LOW_THRESHOLD);  if (t) s_settings.low_thresh  = t->value->int32;
   t = dict_find(iter, KEY_URGENT_HIGH);    if (t) s_settings.urgent_high = t->value->int32;
   t = dict_find(iter, KEY_URGENT_LOW);     if (t) s_settings.urgent_low  = t->value->int32;
+  t = dict_find(iter, KEY_ALERTS_ENABLED);  if (t) s_settings.alerts_enabled  = (bool)t->value->int32;
+  t = dict_find(iter, KEY_VIBE_LOW);        if (t) s_settings.vibe_low        = t->value->int32;
+  t = dict_find(iter, KEY_VIBE_HIGH);       if (t) s_settings.vibe_high       = t->value->int32;
+  t = dict_find(iter, KEY_VIBE_URGENT_LOW); if (t) s_settings.vibe_urgent_low = t->value->int32;
+  t = dict_find(iter, KEY_VIBE_URGENT_HIGH);if (t) s_settings.vibe_urgent_high= t->value->int32;
 
   t = dict_find(iter, KEY_GRAPH_DATA);
   if (t && t->length <= GRAPH_POINTS) {
@@ -904,6 +982,11 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   persist_write_int(PERSIST_LOW_THRESH,  s_settings.low_thresh);
   persist_write_int(PERSIST_URG_HIGH,    s_settings.urgent_high);
   persist_write_int(PERSIST_URG_LOW,     s_settings.urgent_low);
+  persist_write_int(PERSIST_ALERTS_ON,       s_settings.alerts_enabled ? 1 : 0);
+  persist_write_int(PERSIST_VIBE_LOW,        s_settings.vibe_low);
+  persist_write_int(PERSIST_VIBE_HIGH,       s_settings.vibe_high);
+  persist_write_int(PERSIST_VIBE_URGENT_LOW, s_settings.vibe_urgent_low);
+  persist_write_int(PERSIST_VIBE_URGENT_HIGH,s_settings.vibe_urgent_high);
   persist_write_int(PERSIST_LAYOUT,      (int32_t)s_settings.layout);
   persist_write_int(PERSIST_SLOT_0,      (int32_t)s_settings.slots[0]);
   persist_write_int(PERSIST_SLOT_1,      (int32_t)s_settings.slots[1]);
@@ -923,12 +1006,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   update_display();
 
   GlucoseZone zone = get_zone(s_glucose);
-  if (zone == ZONE_URGENT_LOW || zone == ZONE_URGENT_HIGH) {
-    fire_urgent_vibe();
-  } else if (zone == ZONE_LOW || zone == ZONE_HIGH) {
-    static const uint32_t segs[] = { 200, 100, 200 };
-    VibePattern pat = { .durations = segs, .num_segments = 3 };
-    vibes_enqueue_custom_pattern(pat);
+  if (zone == ZONE_LOW || zone == ZONE_HIGH ||
+      zone == ZONE_URGENT_LOW || zone == ZONE_URGENT_HIGH) {
+    fire_alert_vibe(zone);
   }
 }
 
@@ -1584,6 +1664,11 @@ static void init(void) {
   if (persist_exists(PERSIST_LOW_THRESH))  s_settings.low_thresh   = persist_read_int(PERSIST_LOW_THRESH);
   if (persist_exists(PERSIST_URG_HIGH))    s_settings.urgent_high  = persist_read_int(PERSIST_URG_HIGH);
   if (persist_exists(PERSIST_URG_LOW))     s_settings.urgent_low   = persist_read_int(PERSIST_URG_LOW);
+  if (persist_exists(PERSIST_ALERTS_ON))       s_settings.alerts_enabled  = persist_read_int(PERSIST_ALERTS_ON) != 0;
+  if (persist_exists(PERSIST_VIBE_LOW))        s_settings.vibe_low        = persist_read_int(PERSIST_VIBE_LOW);
+  if (persist_exists(PERSIST_VIBE_HIGH))       s_settings.vibe_high       = persist_read_int(PERSIST_VIBE_HIGH);
+  if (persist_exists(PERSIST_VIBE_URGENT_LOW)) s_settings.vibe_urgent_low = persist_read_int(PERSIST_VIBE_URGENT_LOW);
+  if (persist_exists(PERSIST_VIBE_URGENT_HIGH))s_settings.vibe_urgent_high= persist_read_int(PERSIST_VIBE_URGENT_HIGH);
   if (persist_exists(PERSIST_LAYOUT))      s_settings.layout       = (WatchLayout)persist_read_int(PERSIST_LAYOUT);
   if (persist_exists(PERSIST_SLOT_0))      s_settings.slots[0]     = (SlotType)persist_read_int(PERSIST_SLOT_0);
   if (persist_exists(PERSIST_SLOT_1))      s_settings.slots[1]     = (SlotType)persist_read_int(PERSIST_SLOT_1);

@@ -29,6 +29,11 @@ var KEY_SLOT_1          = 14;
 var KEY_SLOT_2          = 15;
 var KEY_SLOT_3          = 16;
 var KEY_DEBUG_INFO      = 21;
+var KEY_ALERTS_ENABLED  = 22;
+var KEY_VIBE_LOW         = 23;
+var KEY_VIBE_HIGH        = 24;
+var KEY_VIBE_URGENT_LOW  = 25;
+var KEY_VIBE_URGENT_HIGH = 26;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -53,6 +58,7 @@ function loadSettings() {
   var keys = [
     'nsUrl', 'nsToken', 'dexcomUser', 'dexcomPass', 'useMmol',
     'highThresh', 'lowThresh', 'urgentHigh', 'urgentLow',
+    'alertsEnabled', 'vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh',
     'dataSource', 'graphWindow',
     'layout', 'slot0', 'slot1', 'slot2', 'slot3'
   ];
@@ -66,6 +72,11 @@ function loadSettings() {
   if (!settings.urgentHigh)  settings.urgentHigh  = '250';
   if (!settings.urgentLow)   settings.urgentLow   = '55';
   if (!settings.useMmol)     settings.useMmol     = '0';
+  if (!settings.alertsEnabled)  settings.alertsEnabled  = '1';
+  if (!settings.vibeLow)        settings.vibeLow        = '1';  // VIBE_TYPE_SHORT_PULSE
+  if (!settings.vibeHigh)       settings.vibeHigh       = '1';  // VIBE_TYPE_SHORT_PULSE
+  if (!settings.vibeUrgentLow)  settings.vibeUrgentLow  = '3';  // VIBE_TYPE_DOUBLE_PULSE
+  if (!settings.vibeUrgentHigh) settings.vibeUrgentHigh = '3';  // VIBE_TYPE_DOUBLE_PULSE
   if (!settings.dataSource)  settings.dataSource  = 'nightscout';
   if (!settings.graphWindow) settings.graphWindow = '37';
   if (!settings.layout)      settings.layout      = '0';  // LAYOUT_SIMPLE
@@ -101,6 +112,11 @@ function sendToWatch(glucose, trend, delta, lastReadSec, graphArray) {
   msg[KEY_LOW_THRESHOLD]   = parseInt(settings.lowThresh)  || 70;
   msg[KEY_URGENT_HIGH]     = parseInt(settings.urgentHigh) || 250;
   msg[KEY_URGENT_LOW]      = parseInt(settings.urgentLow)  || 55;
+  msg[KEY_ALERTS_ENABLED]  = parseInt(settings.alertsEnabled)  || 0;
+  msg[KEY_VIBE_LOW]        = parseInt(settings.vibeLow)        || 0;
+  msg[KEY_VIBE_HIGH]       = parseInt(settings.vibeHigh)       || 0;
+  msg[KEY_VIBE_URGENT_LOW] = parseInt(settings.vibeUrgentLow)  || 0;
+  msg[KEY_VIBE_URGENT_HIGH]= parseInt(settings.vibeUrgentHigh) || 0;
   msg[KEY_LAYOUT]          = parseInt(settings.layout)     || 0;
   msg[KEY_SLOT_0]          = parseInt(settings.slot0)      || 0;
   msg[KEY_SLOT_1]          = parseInt(settings.slot1)      || 0;
@@ -453,6 +469,11 @@ Pebble.addEventListener('showConfiguration', function() {
     '&lowThresh='   + encodeURIComponent(settings.lowThresh   || '70') +
     '&urgentHigh='  + encodeURIComponent(settings.urgentHigh  || '250') +
     '&urgentLow='   + encodeURIComponent(settings.urgentLow   || '55') +
+    '&alertsEnabled=' + encodeURIComponent(settings.alertsEnabled || '1') +
+    '&vibeLow=' + encodeURIComponent(settings.vibeLow || '1') +
+    '&vibeHigh=' + encodeURIComponent(settings.vibeHigh || '1') +
+    '&vibeUrgentLow=' + encodeURIComponent(settings.vibeUrgentLow || '3') +
+    '&vibeUrgentHigh=' + encodeURIComponent(settings.vibeUrgentHigh || '3') +
     '&graphWindow=' + encodeURIComponent(settings.graphWindow || '37') +
     '&layout='      + encodeURIComponent(settings.layout      || '0') +
     '&slot0='       + encodeURIComponent(settings.slot0       || '2') +

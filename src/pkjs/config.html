@@ -10,6 +10,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0d0d0d;
       color: #fff;
+      font-size: 16px;
       padding: 0 0 40px 0;
     }
     .header {
@@ -18,12 +19,12 @@
       text-align: center;
     }
     .header h1 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       letter-spacing: 1px;
     }
     .header p {
-      font-size: 13px;
+      font-size: 16px;
       opacity: 0.8;
       margin-top: 4px;
     }
@@ -31,7 +32,7 @@
       margin: 20px 16px 0;
     }
     .section-title {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -53,12 +54,12 @@
     .field:last-child { border-bottom: none; }
     .field-label {
       flex: 1;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
     }
     .field-hint {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       color: #888;
       margin-top: 2px;
     }
@@ -67,7 +68,7 @@
       border: 1px solid #3a3a3a;
       border-radius: 8px;
       color: #fff;
-      font-size: 14px;
+      font-size: 16px;
       padding: 8px 12px;
       width: 100%;
       margin-top: 8px;
@@ -109,8 +110,24 @@
       grid-template-columns: 1fr 1fr;
       gap: 0;
     }
-    .threshold-row .field { border-right: 1px solid #2a2a2a; }
+    .threshold-row + .threshold-row { border-top: 1px solid #2a2a2a; }
+    .threshold-row .field { border-right: 1px solid #2a2a2a; border-bottom: 0; }
     .threshold-row .field:last-child { border-right: none; }
+    .slot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .slot-grid .field {
+      border-right: 1px solid #2a2a2a;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .slot-grid .field:nth-child(2n) { border-right: none; }
+    .slot-grid .field:nth-last-child(-n+2) { border-bottom: none; }
+    .vibe-picker {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .vibe-picker .field-hint { margin-top: 0; }
     .save-btn {
       display: block;
       width: calc(100% - 32px);
@@ -118,7 +135,7 @@
       padding: 16px;
       background: #00bcd4;
       color: #000;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       border: none;
       border-radius: 12px;
@@ -126,22 +143,6 @@
       letter-spacing: 0.5px;
     }
     .save-btn:active { opacity: 0.8; }
-    .zone-preview {
-      display: flex;
-      gap: 6px;
-      margin: 12px 16px 0;
-      padding: 12px;
-      background: #1a1a1a;
-      border-radius: 12px;
-    }
-    .zone-chip {
-      flex: 1;
-      text-align: center;
-      padding: 6px 4px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-    }
     select option { background: #1a1a1a; }
   </style>
 </head>
@@ -156,57 +157,59 @@
 <div class="section">
   <div class="section-title">Widget Slots</div>
   <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Slot A — Top Left
-        <span class="field-hint">Top-left corner</span>
+    <div class="slot-grid">
+      <div class="field field-full">
+        <div class="field-label">Slot A — Top Left
+          <span class="field-hint">Top-left corner</span>
+        </div>
+        <select id="slot0">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot0">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot B — Top Right
-        <span class="field-hint">Top-right corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot B — Top Right
+          <span class="field-hint">Top-right corner</span>
+        </div>
+        <select id="slot1">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot1">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot C — Bottom Left
-        <span class="field-hint">Bottom-left corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot C — Bottom Left
+          <span class="field-hint">Bottom-left corner</span>
+        </div>
+        <select id="slot2">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot2">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot D — Bottom Right
-        <span class="field-hint">Bottom-right corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot D — Bottom Right
+          <span class="field-hint">Bottom-right corner</span>
+        </div>
+        <select id="slot3">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot3">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
     </div>
   </div>
 </div>
@@ -224,39 +227,31 @@
         <option value="dexcom">Dexcom Share</option>
       </select>
     </div>
-  </div>
-</div>
-
-<div class="section" id="nightscout-section">
-  <div class="section-title">Nightscout</div>
-  <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Nightscout URL
-        <span class="field-hint">e.g. https://mysite.ns.io</span>
+    <div id="nightscout-section">
+      <div class="field field-full">
+        <div class="field-label">Nightscout URL
+          <span class="field-hint">e.g. https://mysite.ns.io</span>
+        </div>
+        <input type="text" id="nsUrl" placeholder="https://yoursite.nightscout.io">
       </div>
-      <input type="text" id="nsUrl" placeholder="https://yoursite.nightscout.io">
-    </div>
-    <div class="field field-full">
-      <div class="field-label">API Token (optional)
-        <span class="field-hint">Your Nightscout access token</span>
+      <div class="field field-full">
+        <div class="field-label">API Token (optional)
+          <span class="field-hint">Your Nightscout access token</span>
+        </div>
+        <input type="password" id="nsToken" placeholder="yourtoken-abc123">
       </div>
-      <input type="password" id="nsToken" placeholder="yourtoken-abc123">
     </div>
-  </div>
-</div>
-
-<div class="section" id="dexcom-section" style="display:none">
-  <div class="section-title">Dexcom Share</div>
-  <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Dexcom Username
-        <span class="field-hint">Your Dexcom account email</span>
+    <div id="dexcom-section" style="display:none">
+      <div class="field field-full">
+        <div class="field-label">Dexcom Username
+          <span class="field-hint">Your Dexcom account email</span>
+        </div>
+        <input type="text" id="dexcomUser" placeholder="you@example.com">
       </div>
-      <input type="text" id="dexcomUser" placeholder="you@example.com">
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Dexcom Password</div>
-      <input type="password" id="dexcomPass" placeholder="••••••••">
+      <div class="field field-full">
+        <div class="field-label">Dexcom Password</div>
+        <input type="password" id="dexcomPass" placeholder="••••••••">
+      </div>
     </div>
   </div>
 </div>
@@ -287,50 +282,90 @@
   </div>
 </div>
 
-<!-- Zone Previews -->
-<div class="section">
-  <div class="section-title">Zone Previews</div>
-  <div class="card">
-    <div class="zone-preview">
-      <div class="zone-chip" style="background:#c62828; color:#fff">URGENT<br>LOW</div>
-      <div class="zone-chip" style="background:#e65100; color:#fff">LOW</div>
-      <div class="zone-chip" style="background:#1b5e20; color:#fff">IN<br>RANGE</div>
-      <div class="zone-chip" style="background:#f57f17; color:#000">HIGH</div>
-      <div class="zone-chip" style="background:#c62828; color:#fff">URGENT<br>HIGH</div>
-    </div>
-  </div>
-</div>
 
 <!-- Alert Thresholds -->
 <div class="section">
   <div class="section-title">Alert Thresholds</div>
   <div class="card">
+    <div class="field">
+      <div class="field-label">Threshold Alerts
+        <span class="field-hint">Vibrate when glucose leaves range</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="alertsEnabled">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Low
           <span class="field-hint">mg/dL (default 70)</span>
         </div>
         <input type="number" id="lowThresh" value="70" min="40" max="100">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeLow">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
       <div class="field field-full">
         <div class="field-label">High
           <span class="field-hint">mg/dL (default 180)</span>
         </div>
         <input type="number" id="highThresh" value="180" min="120" max="300">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeHigh">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Urgent Low
-          <span class="field-hint">Flash + 3× haptic</span>
+          <span class="field-hint">mg/dL (default 55)</span>
         </div>
         <input type="number" id="urgentLow" value="55" min="40" max="80">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeUrgentLow">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
       <div class="field field-full">
         <div class="field-label">Urgent High
-          <span class="field-hint">Flash + 3× haptic</span>
+          <span class="field-hint">mg/dL (default 250)</span>
         </div>
         <input type="number" id="urgentHigh" value="250" min="200" max="400">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeUrgentHigh">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -357,6 +392,11 @@
 
   // Display
   document.getElementById('useMmol').checked   = params.useMmol === '1';
+  document.getElementById('alertsEnabled').checked = params.alertsEnabled !== '0';
+  document.getElementById('vibeLow').value         = params.vibeLow         || '1';  // Short Pulse
+  document.getElementById('vibeHigh').value        = params.vibeHigh        || '1';  // Short Pulse
+  document.getElementById('vibeUrgentLow').value   = params.vibeUrgentLow   || '3';  // Double Pulse
+  document.getElementById('vibeUrgentHigh').value  = params.vibeUrgentHigh  || '3';  // Double Pulse
   document.getElementById('lowThresh').value   = params.lowThresh   || '70';
   document.getElementById('highThresh').value  = params.highThresh  || '180';
   document.getElementById('urgentLow').value   = params.urgentLow   || '55';
@@ -373,6 +413,28 @@
   });
   document.getElementById('dataSource').dispatchEvent(new Event('change'));
 
+  // Vibration pickers only matter when alerts are enabled
+  document.getElementById('alertsEnabled').addEventListener('change', function() {
+    var display = this.checked ? 'block' : 'none';
+    document.querySelectorAll('.vibe-picker').forEach(function(el) {
+      el.style.display = display;
+    });
+  });
+  document.getElementById('alertsEnabled').dispatchEvent(new Event('change'));
+
+  // Fire the chosen vibe type on the watch right away, so the user can feel
+  // it before saving. Only works if this page is running inside the Pebble
+  // app's webview (it has no effect, e.g., in a plain desktop preview).
+  var KEY_TEST_VIBE = 27;
+  ['vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      if (typeof Pebble === 'undefined' || !Pebble.sendAppMessage) return;
+      var msg = {};
+      msg[KEY_TEST_VIBE] = parseInt(this.value, 10);
+      Pebble.sendAppMessage(msg, function() {}, function() {});
+    });
+  });
+
   function save() {
     var data = {
       layout:      '0',  // V1 ships Simple layout only
@@ -386,6 +448,11 @@
       dexcomPass:  document.getElementById('dexcomPass').value,
       dataSource:  document.getElementById('dataSource').value,
       useMmol:     document.getElementById('useMmol').checked ? '1' : '0',
+      alertsEnabled:   document.getElementById('alertsEnabled').checked ? '1' : '0',
+      vibeLow:         document.getElementById('vibeLow').value,
+      vibeHigh:        document.getElementById('vibeHigh').value,
+      vibeUrgentLow:   document.getElementById('vibeUrgentLow').value,
+      vibeUrgentHigh:  document.getElementById('vibeUrgentHigh').value,
       lowThresh:   document.getElementById('lowThresh').value,
       highThresh:  document.getElementById('highThresh').value,
       urgentLow:   document.getElementById('urgentLow').value,
