@@ -22,7 +22,7 @@ SDK: ⚠ Requires installation
 
 ### Metadata
 - **Display Name**: Steady
-- **Short Description** (package.json): "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, and a built-in CGM widget. Glucose monitoring that fits in."
+- **Short Description** (package.json): "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 8 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in."
 - **Long Description** (package.json): Clean watchface framing with CGM as a natural widget, not a medical device identity
 - **UUID**: 552fd91e-ad93-4d0f-ae44-74bc9d3108d6 (unchanged)
 - **Version**: 1.0.0
@@ -98,7 +98,7 @@ Visit the returned URL (or check https://apps.repebble.com) and confirm:
 - ✓ Short description visible
 - ✓ Long description complete
 - ✓ Platform list includes: Time 2, Round 2, Time, Steel, Round
-- ✓ Author: "Michaël Blancon Tardi"
+- ✓ Author: "btmx-7"
 
 ---
 
@@ -111,7 +111,7 @@ Visit the returned URL (or check https://apps.repebble.com) and confirm:
 | Version | 1.0.0 |
 | UUID | 552fd91e-ad93-4d0f-ae44-74bc9d3108d6 |
 | Category | Health / Utilities |
-| Author | Michaël Blancon Tardi |
+| Author | btmx-7 |
 
 ### Supported Platforms
 - Pebble Time 2 (emery) — 200×228 color e-paper

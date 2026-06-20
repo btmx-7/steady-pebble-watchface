@@ -12,8 +12,9 @@ Built for the Pebble Spring 2026 App Contest.
 
 - CGM integration (Nightscout and Dexcom Share supported out of the box)
 - 4 configurable widget slots (battery, weather, heart rate, steps, or CGM in any corner)
+- 8 color themes, with light, dark, or automatic (sunrise/sunset) mode
 - Color-coded glucose zones: urgent low/high (red), low (orange), in range (theme accent color), high (yellow)
-- Haptic and visual alerts on urgent glucose zones
+- Haptic and visual alerts on urgent glucose zones, with a configurable vibration type per threshold
 - Weather via OpenMeteo, no API key required
 
 ## Layout
@@ -58,7 +59,8 @@ Configured via the Pebble app settings page:
 - CGM data source and credentials
 - Glucose display units (mg/dL or mmol/L)
 - Graph window (1, 2, or 3 hours)
-- Alert thresholds (low, high, urgent low, urgent high)
+- Alert thresholds (low, high, urgent low, urgent high), each with its own vibration type
+- Color theme (8 options, Cyan is default) and light/dark/auto mode
 
 ## Roadmap
 
@@ -68,9 +70,6 @@ Configured via the Pebble app settings page:
 
 ### Future
 
-- 8 color themes (Cyan is default)
-- Light mode
-- Auto-sunset mode switch
 - Music playback indicator
 
 ## License
