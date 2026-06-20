@@ -51,7 +51,8 @@
       "KEY_VIBE_URGENT_HIGH": 26,
       "KEY_TEST_VIBE":        27,
       "KEY_COLOR_THEME":      28,
-      "KEY_DARK_MODE":        29
+      "KEY_DARK_MODE":        29,
+      "KEY_REQUEST_REFRESH":  30
     },
     "resources": {
       "media": [
