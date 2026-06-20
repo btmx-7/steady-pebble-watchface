@@ -1,0 +1,29 @@
+name: Deploy config page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/pkjs/config.html'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare publish directory
+        run: |
+          mkdir -p publish
+          cp src/pkjs/config.html publish/config.html
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./publish
+          publish_branch: gh-pages
+          commit_message: 'Deploy config.html from ${{ github.sha }}'
