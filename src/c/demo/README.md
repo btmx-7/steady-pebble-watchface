@@ -14,19 +14,33 @@ include any of this code.
 
 ## Scenario table
 
-| # | Name          | Glucose | Trend       | Delta | Layout    | Graph   | Notes                   |
-|---|---------------|---------|-------------|-------|-----------|---------|-------------------------|
-| 0 | `urgent_low`  | 45      | Double Down | -15   | Simple    | Falling | Red flash + 3x haptic   |
-| 1 | `low`         | 65      | Single Down | -8    | Simple    | Falling | Orange zone             |
-| 2 | `in_range`    | 120     | Flat        | +2    | Simple    | Wave    | Default state (green)   |
-| 3 | `high`        | 195     | Single Up   | +10   | Simple    | Rising  | Amber zone              |
-| 4 | `urgent_high` | 270     | Double Up   | +18   | Simple    | Rising  | Red flash + 3x haptic   |
-| 5 | `stale`       | 120     | None        | 0     | Simple    | Flat    | Last read 30 min ago    |
-| 6 | `dashboard`   | 142     | Flat        | +3    | Dashboard | Wave    | Alt layout + graph      |
-| 7 | `zero_state`  | 0       | None        | 0     | Simple    | Flat    | No data, all slots None |
+8 scenarios cover the glucose/data states *and* exercise slot layout, color
+theme, light/dark mode, and time-of-day combinations so a single sweep
+produces a visually diverse contact sheet rather than 8 near-identical shots.
 
-The slot loadout for states 0-6 is `{Weather, Battery, CGM, Heart Rate}`.
-State 7 uses `{None, None, None, None}` to verify empty-slot rendering.
+| # | Name          | Glucose | Trend       | Layout    | Slots (A,B,C,D)              | Theme  | Mode  | Time  |
+|---|---------------|---------|-------------|-----------|-------------------------------|--------|-------|-------|
+| 0 | `urgent_low`  | 45      | Double Down | Simple    | CGM, Battery, Weather, Steps  | Red    | Dark  | 06:42 |
+| 1 | `low`         | 65      | Single Down | Simple    | Battery, Steps, CGM, Weather  | Orange | Light | 09:15 |
+| 2 | `in_range`    | 120     | Flat        | Simple    | Steps, Weather, Battery, CGM  | Yellow | Dark  | 12:08 |
+| 3 | `high`        | 195     | Single Up   | Simple    | Weather, CGM, Steps, Battery  | Green  | Light | 14:53 |
+| 4 | `urgent_high` | 270     | Double Up   | Simple    | Steps, Battery, CGM, Weather  | Cyan   | Dark  | 17:27 |
+| 5 | `stale`       | 120     | None        | Simple    | Heart Rate, CGM, Battery, Weather | Blue | Light | 20:36 |
+| 6 | `dashboard`   | 142     | Flat        | Dashboard | Weather, Battery, Steps, (unused) | Purple | Dark | 22:14 |
+| 7 | `zero_state`  | 0       | None        | Simple    | None, None, None, None       | Pink   | Light | 00:05 |
+
+Notes:
+- CGM's slot position rotates across A/B/C/D so the widget grid is exercised
+  in every position, not just one fixed spot.
+- Steps appears in 6 of the 8 scenarios (it was previously unused by any
+  scenario); `stale` and `zero_state` deliberately omit it to also cover
+  Heart Rate and the fully-empty grid.
+- `dashboard` has a dedicated CGM panel outside the slot grid, so its slots
+  showcase Weather/Battery/Steps instead of duplicating CGM as a widget.
+- All 8 `ColorThemeId` values are used exactly once, split 4 dark / 4 light.
+- `Time` is the wall-clock time the screenshot sweep pins via `faketime`
+  (see `scripts/screenshot-sweep.sh`); spread across the day for a
+  heterogeneous panel of hours.
 
 ## Usage
 
@@ -62,12 +76,15 @@ Outputs to `screenshots/demo/<platform>_<i>_<name>.png`.
 ## Adding a new scenario
 
 1. Bump `DEMO_SCENARIO_COUNT` in `demo.h`.
-2. Append a row to `demo_scenarios[]` in `demo.c`.
-3. Append the short name to `NAMES=(...)` in `scripts/screenshot-sweep.sh`.
+2. Append a row to `demo_scenarios[]` in `demo.c`, including a `color_theme`
+   and `dark_mode` value.
+3. Append the short name to `NAMES=(...)` *and* a time to `TIMES=(...)` in
+   `scripts/screenshot-sweep.sh`, keeping both arrays aligned by index with
+   `demo_scenarios[]`.
 4. Update the table above.
 
-Trend / slot / layout / graph-pattern codes are listed in the header comment of
-`demo.c`.
+Trend / slot / layout / graph-pattern / color-theme codes are listed in the
+header comment of `demo.c`.
 
 ## Release checklist
 

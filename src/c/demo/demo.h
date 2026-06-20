@@ -24,6 +24,8 @@ typedef struct {
   uint8_t   layout;                // WatchLayout
   uint8_t   slots[4];              // SlotType per slot A-D
   uint8_t   graph_pattern;         // 0=wave, 1=rising, 2=falling, 3=flat-low, 4=spike
+  uint8_t   color_theme;           // ColorThemeId (0-7)
+  uint8_t   dark_mode;             // 0=light, 1=dark
 } DemoScenario;
 
 #define DEMO_SCENARIO_COUNT 8

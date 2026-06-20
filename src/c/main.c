@@ -1704,6 +1704,10 @@ static void apply_demo_state(int n) {
   s_settings.low_thresh  = 70;
   s_settings.urgent_high = 250;
   s_settings.urgent_low  = 55;
+  s_settings.color_theme = (ColorThemeId)d->color_theme;
+  s_settings.dark_mode   = d->dark_mode != 0;
+  apply_theme();
+  apply_theme_to_layers();
 
   // Graph pattern fill (values stored as mg/dL / 2)
   s_graph_count = GRAPH_POINTS;
