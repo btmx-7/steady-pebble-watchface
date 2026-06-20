@@ -50,6 +50,7 @@ for i in $STATES; do
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
   pebble kill >/dev/null 2>&1 || true
+  sleep 2  # let the old QEMU process/ports fully release before booting a new one
   if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
     faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"
   else
