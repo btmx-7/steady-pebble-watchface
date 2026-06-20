@@ -45,6 +45,6 @@ extern const ThemeColors k_theme_light[COLOR_THEME_COUNT];
 // Returns the resolved palette for (id, dark/light), falling back to
 // the original default (cyan/dark) for an out-of-range id.
 static inline const ThemeColors *theme_get(ColorThemeId id, bool dark) {
-  if (id < 0 || id >= COLOR_THEME_COUNT) id = COLOR_THEME_CYAN;
+  if (id >= COLOR_THEME_COUNT) id = COLOR_THEME_CYAN;
   return dark ? &k_theme_dark[id] : &k_theme_light[id];
 }
