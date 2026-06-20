@@ -47,9 +47,9 @@ Stale data shown in gray. Glucose display in mg/dL or mmol/L.
 |--------|-----------|-------|
 | Pebble Time 2 (emery) | 200x228 | Rectangular |
 | Pebble Round 2 (gabbro) | 260x260 | Circular |
-| Pebble Time (basalt) | 144x168 | Rectangular |
-| Pebble Steel (diorite) | 144x168 | Rectangular |
-| Pebble Round (chalk) | 180x180 | Circular |
+
+Pebble Time (basalt), Pebble 2 (diorite), and Pebble Time Round (chalk) are not
+yet designed for — support is planned for a future release.
 
 ## Settings
 
