@@ -214,6 +214,37 @@
   </div>
 </div>
 
+<!-- Appearance -->
+<div class="section">
+  <div class="section-title">Appearance</div>
+  <div class="card">
+    <div class="field field-full">
+      <div class="field-label">Color Theme
+        <span class="field-hint">Accent color used throughout the watchface</span>
+      </div>
+      <select id="colorTheme">
+        <option value="0">Red</option>
+        <option value="1">Orange</option>
+        <option value="2">Yellow</option>
+        <option value="3">Green</option>
+        <option value="4">Cyan</option>
+        <option value="5">Blue</option>
+        <option value="6">Purple</option>
+        <option value="7">Pink</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="field-label">Dark Mode
+        <span class="field-hint">Off uses a light background</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="darkMode">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
 <!-- Data Source -->
 <div class="section">
   <div class="section-title">Data Source</div>
@@ -385,6 +416,10 @@
   document.getElementById('slot2').value    = params.slot2  || '5';  // CGM
   document.getElementById('slot3').value    = params.slot3  || '3';  // Heart Rate
 
+  // Appearance
+  document.getElementById('colorTheme').value  = params.colorTheme || '4';  // Cyan
+  document.getElementById('darkMode').checked  = params.darkMode !== '0';
+
   // CGM source
   document.getElementById('nsUrl').value       = params.nsUrl      || '';
   document.getElementById('dexcomUser').value  = params.dexcomUser || '';
@@ -442,6 +477,8 @@
       slot1:       document.getElementById('slot1').value,
       slot2:       document.getElementById('slot2').value,
       slot3:       document.getElementById('slot3').value,
+      colorTheme:  document.getElementById('colorTheme').value,
+      darkMode:    document.getElementById('darkMode').checked ? '1' : '0',
       nsUrl:       document.getElementById('nsUrl').value,
       nsToken:     document.getElementById('nsToken').value,
       dexcomUser:  document.getElementById('dexcomUser').value,

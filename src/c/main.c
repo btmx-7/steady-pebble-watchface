@@ -10,21 +10,12 @@
  */
 
 #include <pebble.h>
+#include "theme_colors.h"
 
 // ─── Design System Colors ────────────────────────────────────────────────────
-// Source: Figma variables (bKKqEkSN0q1rOdsEX8OpaE)
-// Pebble GColor: argb = 11_RR_GG_BB, 2 bits/channel (0=0x00,1=0x55,2=0xAA,3=0xFF)
-#define CLR_TEXT_SUBTLE    ((GColor){.argb = 0xEF})  // #AAFFFF text/subtle
-#define CLR_TEXT_INVERTED  ((GColor){.argb = 0xFF})  // #FFFFFF text/inverted
-#define CLR_TEXT_DEFAULT   ((GColor){.argb = 0xCF})  // #00FFFF text/default
-#define CLR_ICON_DEFAULT   ((GColor){.argb = 0xDF})  // #55FFFF icon/default
-#define CLR_ICON_SUBTLE    ((GColor){.argb = 0xCA})  // #00AAAA icon/subtle
-#define CLR_BORDER_SUBTLE  ((GColor){.argb = 0xC5})  // #005555 surface/border/subtle
-#define CLR_STATE_DANGER   ((GColor){.argb = 0xF0})  // #FF0000 state/danger
-#define CLR_STATE_WARNING  ((GColor){.argb = 0xF8})  // #FFAA00 state/warning
-#define CLR_STATE_POSITIVE ((GColor){.argb = 0xCE})  // #00FFAA state/positive
-#define CLR_STATE_INACTIVE ((GColor){.argb = 0xEA})  // #AAAAAA state/inactive
-#define CLR_STATE_DISABLED ((GColor){.argb = 0xD5})  // #555555 state/disabled
+// Resolved palette for the active color theme + light/dark mode.
+// Source: resources/tokens/color-semantic-{light,dark}/{hue}.tokens.json
+static ThemeColors s_theme;
 
 // ─── AppMessage Keys ─────────────────────────────────────────────────────────
 #define KEY_GLUCOSE_VALUE   0
@@ -61,6 +52,8 @@
 // Sent alone by the config page (not bundled with settings) to fire a vibe
 // type immediately, so the user can feel it before saving.
 #define KEY_TEST_VIBE        27
+#define KEY_COLOR_THEME      28
+#define KEY_DARK_MODE        29
 
 // ─── Persistence Keys ────────────────────────────────────────────────────────
 #define PERSIST_GLUCOSE     100
@@ -86,6 +79,8 @@
 #define PERSIST_VIBE_HIGH       120
 #define PERSIST_VIBE_URGENT_LOW 121
 #define PERSIST_VIBE_URGENT_HIGH 122
+#define PERSIST_COLOR_THEME      123
+#define PERSIST_DARK_MODE        124
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -224,6 +219,8 @@ typedef struct {
   int32_t     vibe_urgent_high;
   WatchLayout layout;
   SlotType    slots[4];  // 0=TL/Left, 1=TR/Center, 2=BL/Right, 3=BR (Simple only)
+  ColorThemeId color_theme;
+  bool        dark_mode;
 } WatchSettings;
 
 static WatchSettings s_settings = {
@@ -238,8 +235,17 @@ static WatchSettings s_settings = {
   .vibe_urgent_low  = VIBE_TYPE_DOUBLE_PULSE,
   .vibe_urgent_high = VIBE_TYPE_DOUBLE_PULSE,
   .layout      = LAYOUT_SIMPLE,
-  .slots       = { SLOT_WEATHER, SLOT_BATTERY, SLOT_CGM, SLOT_HEART_RATE }
+  .slots       = { SLOT_WEATHER, SLOT_BATTERY, SLOT_CGM, SLOT_HEART_RATE },
+  .color_theme = COLOR_THEME_CYAN,
+  .dark_mode   = true
 };
+
+// Resolves s_theme from current settings. Layers that are only ever set once
+// at creation time (not redrawn every tick) are re-pushed here too; layers
+// driven by a *_update_proc just read s_theme directly on next redraw.
+static void apply_theme(void) {
+  s_theme = *theme_get(s_settings.color_theme, s_settings.dark_mode);
+}
 
 // ─── Graph Buffer ────────────────────────────────────────────────────────────
 #define GRAPH_POINTS 37
@@ -311,12 +317,12 @@ static GlucoseZone get_zone(int32_t glucose_mgdl) {
 
 static GColor zone_color(GlucoseZone zone) {
   switch (zone) {
-    case ZONE_URGENT_LOW:  return CLR_STATE_DANGER;
-    case ZONE_LOW:         return CLR_STATE_WARNING;
-    case ZONE_IN_RANGE:    return CLR_ICON_DEFAULT;
-    case ZONE_HIGH:        return CLR_STATE_WARNING;
-    case ZONE_URGENT_HIGH: return CLR_STATE_DANGER;
-    default:               return CLR_STATE_INACTIVE;
+    case ZONE_URGENT_LOW:  return s_theme.state_danger;
+    case ZONE_LOW:         return s_theme.state_warning;
+    case ZONE_IN_RANGE:    return s_theme.icon_default;
+    case ZONE_HIGH:        return s_theme.state_warning;
+    case ZONE_URGENT_HIGH: return s_theme.state_danger;
+    default:               return s_theme.state_inactive;
   }
 }
 
@@ -364,7 +370,7 @@ static void graph_layer_update_proc(Layer *layer, GContext *ctx) {
   int w = bounds.size.w;
   int h = bounds.size.h;
 
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, s_theme.bg);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   if (s_graph_count < 2) return;
@@ -423,7 +429,7 @@ static void graph_layer_update_proc(Layer *layer, GContext *ctx) {
     if (i == s_graph_count - 1) {
       graphics_context_set_fill_color(ctx, seg_color);
       graphics_fill_circle(ctx, pt, 4);
-      graphics_context_set_stroke_color(ctx, GColorWhite);
+      graphics_context_set_stroke_color(ctx, s_theme.bg_inverted);
       graphics_context_set_stroke_width(ctx, 1);
       graphics_draw_circle(ctx, pt, 4);
     }
@@ -452,7 +458,7 @@ static void digit_stroke_update_proc(Layer *layer, GContext *ctx) {
     {-4, 0}, {4, 0}, {0, -4}, {0, 4},
     {-4,-4}, {4,-4}, {-4, 4}, {4, 4}
   };
-  graphics_context_set_text_color(ctx, GColorBlack);
+  graphics_context_set_text_color(ctx, s_theme.bg);
   for (int j = 0; j < 8; j++) {
     GRect r = GRect(4 + offs[j].x, 4 + offs[j].y, tw, th);
     graphics_draw_text(ctx, buf, s_time_font, r,
@@ -475,27 +481,27 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       d->icon_filled = true;
       if (bat.is_charging) {
         d->icon_glyph = ICON_BATTERY_ANDROID_BOLT;
-        d->icon_color = CLR_STATE_POSITIVE;
+        d->icon_color = s_theme.state_positive;
       } else if (pct <= 10) {
         // 5%-range: battery_android_1, danger theme
         d->icon_glyph = ICON_BATTERY_ANDROID_1;
-        d->icon_color = CLR_STATE_DANGER;
+        d->icon_color = s_theme.state_danger;
       } else if (pct <= 25) {
         // 25%-range: battery_android_2, warning theme
         d->icon_glyph = ICON_BATTERY_ANDROID_2;
-        d->icon_color = CLR_STATE_WARNING;
+        d->icon_color = s_theme.state_warning;
       } else if (pct <= 50) {
         // 50%-range: battery_android_3, default theme
         d->icon_glyph = ICON_BATTERY_ANDROID_3;
-        d->icon_color = CLR_ICON_DEFAULT;
+        d->icon_color = s_theme.icon_default;
       } else if (pct <= 75) {
         // 75%-range: battery_android_5, default theme
         d->icon_glyph = ICON_BATTERY_ANDROID_5;
-        d->icon_color = CLR_ICON_DEFAULT;
+        d->icon_color = s_theme.icon_default;
       } else {
         // 100%: battery_android_0 (full), default theme
         d->icon_glyph = ICON_BATTERY_ANDROID_0;
-        d->icon_color = CLR_ICON_DEFAULT;
+        d->icon_color = s_theme.icon_default;
       }
       break;
     }
@@ -521,7 +527,7 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       uint8_t icon_idx = s_weather_icon < 8 ? s_weather_icon : 7;
       d->icon_glyph = s_weather_icons[icon_idx];
       d->icon_filled = avail;
-      d->icon_color = avail ? CLR_ICON_DEFAULT : CLR_STATE_INACTIVE;
+      d->icon_color = avail ? s_theme.icon_default : s_theme.state_inactive;
       break;
     }
     case SLOT_HEART_RATE: {
@@ -535,15 +541,15 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       if (hr == 0) {
         d->icon_glyph = ICON_PULSE_ALERT;
         d->icon_filled = false;
-        d->icon_color = CLR_STATE_INACTIVE;
+        d->icon_color = s_theme.state_inactive;
       } else if (hr > 160) {
         d->icon_glyph = ICON_CARDIOLOGY;
         d->icon_filled = true;
-        d->icon_color = CLR_ICON_DEFAULT;
+        d->icon_color = s_theme.icon_default;
       } else {
         d->icon_glyph = ICON_HEART_RATE;
         d->icon_filled = true;
-        d->icon_color = CLR_ICON_DEFAULT;
+        d->icon_color = s_theme.icon_default;
       }
       break;
     }
@@ -561,7 +567,7 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       snprintf(d->unit_str, sizeof(d->unit_str), "steps");
       d->icon_glyph = ICON_STEPS;
       d->icon_filled = (s_steps_available && steps > 0);
-      d->icon_color = (s_steps_available && steps > 0) ? CLR_ICON_SUBTLE : CLR_STATE_INACTIVE;
+      d->icon_color = (s_steps_available && steps > 0) ? s_theme.icon_subtle : s_theme.state_inactive;
       break;
     }
     case SLOT_CGM: {
@@ -578,7 +584,7 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       if (stale || s_glucose == 0) {
         d->icon_glyph = ICON_ERROR;
         d->icon_filled = false;
-        d->icon_color = CLR_STATE_INACTIVE;
+        d->icon_color = s_theme.state_inactive;
       } else {
         d->icon_glyph = trend_icon((GlucoseTrend)s_trend);
         d->icon_filled = true;
@@ -617,8 +623,8 @@ static void slot_update_proc(Layer *layer, GContext *ctx) {
 
   // Background track arc — disabled color (#555555) when slot has no data,
   // border/subtle (#005555) otherwise. 6px stroke.
-  bool slot_has_data = (d->icon_color.argb != CLR_STATE_INACTIVE.argb);
-  GColor track_color = slot_has_data ? CLR_BORDER_SUBTLE : CLR_STATE_DISABLED;
+  bool slot_has_data = (d->icon_color.argb != s_theme.state_inactive.argb);
+  GColor track_color = slot_has_data ? s_theme.border_subtle : s_theme.state_disabled;
   graphics_context_set_stroke_color(ctx, track_color);
   graphics_context_set_stroke_width(ctx, 6);
   graphics_draw_arc(ctx, arc_bounds, GOvalScaleModeFitCircle,
@@ -695,7 +701,7 @@ static void slot_update_proc(Layer *layer, GContext *ctx) {
     GFont vfont = s_value_font ? s_value_font
                                : fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     GRect val_rect = GRect(5, 16, 46, 20);
-    graphics_context_set_text_color(ctx, GColorBlack);
+    graphics_context_set_text_color(ctx, s_theme.bg);
     for (int i = 0; i < 8; i++) {
       GRect r = GRect(val_rect.origin.x + offs2[i].x,
                       val_rect.origin.y + offs2[i].y,
@@ -703,7 +709,7 @@ static void slot_update_proc(Layer *layer, GContext *ctx) {
       graphics_draw_text(ctx, d->value_str, vfont, r,
         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
     }
-    graphics_context_set_text_color(ctx, CLR_TEXT_INVERTED);
+    graphics_context_set_text_color(ctx, s_theme.text_inverted);
     graphics_draw_text(ctx, d->value_str, vfont, val_rect,
       GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
   }
@@ -714,7 +720,7 @@ static void slot_update_proc(Layer *layer, GContext *ctx) {
     GFont ufont = s_unit_font ? s_unit_font
                               : fonts_get_system_font(FONT_KEY_GOTHIC_14);
     GRect unit_rect = GRect(0, 36, w, 10);
-    graphics_context_set_text_color(ctx, GColorBlack);
+    graphics_context_set_text_color(ctx, s_theme.bg);
     for (int i = 0; i < 8; i++) {
       GRect r = GRect(unit_rect.origin.x + offs1[i].x,
                       unit_rect.origin.y + offs1[i].y,
@@ -722,7 +728,7 @@ static void slot_update_proc(Layer *layer, GContext *ctx) {
       graphics_draw_text(ctx, d->unit_str, ufont, r,
         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
     }
-    graphics_context_set_text_color(ctx, CLR_TEXT_SUBTLE);
+    graphics_context_set_text_color(ctx, s_theme.text_subtle);
     graphics_draw_text(ctx, d->unit_str, ufont, unit_rect,
       GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
   }
@@ -786,7 +792,7 @@ static void update_display_simple(void) {
     text_layer_set_text(s_simple_bt_layer,
       connected ? ICON_BT_CONNECTED : ICON_BT_DISCONNECTED);
     text_layer_set_text_color(s_simple_bt_layer,
-      connected ? CLR_ICON_DEFAULT : CLR_STATE_DISABLED);
+      connected ? s_theme.icon_default : s_theme.state_disabled);
     GFont bt_font = connected ? s_symbol_font : s_symbol_font_regular;
     if (bt_font) text_layer_set_font(s_simple_bt_layer, bt_font);
   }
@@ -815,7 +821,7 @@ static void update_display_dashboard(void) {
     text_layer_set_text(s_dash_bt_layer,
       connected ? ICON_BT_CONNECTED : ICON_BT_DISCONNECTED);
     text_layer_set_text_color(s_dash_bt_layer,
-      connected ? CLR_ICON_DEFAULT : CLR_STATE_DISABLED);
+      connected ? s_theme.icon_default : s_theme.state_disabled);
     GFont bt_font = connected ? s_symbol_font : s_symbol_font_regular;
     if (bt_font) text_layer_set_font(s_dash_bt_layer, bt_font);
   }
@@ -823,7 +829,7 @@ static void update_display_dashboard(void) {
   // CGM panel
   GlucoseZone zone = get_zone(s_glucose);
   bool stale = data_is_stale();
-  GColor cgm_color = stale ? GColorLightGray : zone_color(zone);
+  GColor cgm_color = stale ? s_theme.state_inactive : zone_color(zone);
 
   if (s_dash_trend_layer) {
     const char *t_icon = trend_icon((GlucoseTrend)s_trend);
@@ -913,8 +919,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update_time();
 }
 
-// Forward declaration needed by inbox_received_handler
+// Forward declarations needed by inbox_received_handler
 void prv_layout_for_bounds(GRect bounds);
+static void apply_theme_to_layers(void);
 
 // ─── AppMessage Handler ──────────────────────────────────────────────────────
 
@@ -972,6 +979,16 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, KEY_MOCK_HR);    if (t) s_heart_rate  = (int)t->value->int32;
   t = dict_find(iter, KEY_MOCK_STEPS); if (t) s_step_count  = (uint32_t)t->value->int32;
 
+  bool theme_changed = false;
+  t = dict_find(iter, KEY_COLOR_THEME);
+  if (t) { s_settings.color_theme = (ColorThemeId)t->value->int32; theme_changed = true; }
+  t = dict_find(iter, KEY_DARK_MODE);
+  if (t) { s_settings.dark_mode = (bool)t->value->int32; theme_changed = true; }
+  if (theme_changed) {
+    apply_theme();
+    apply_theme_to_layers();
+  }
+
   // Persist
   persist_write_int(PERSIST_GLUCOSE,     s_glucose);
   persist_write_int(PERSIST_TREND,       s_trend);
@@ -996,6 +1013,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   persist_write_int(PERSIST_WEATHER_ICN, (int32_t)s_weather_icon);
   persist_write_int(PERSIST_WEATHER_MIN, (int32_t)s_weather_tmin);
   persist_write_int(PERSIST_WEATHER_MAX, (int32_t)s_weather_tmax);
+  persist_write_int(PERSIST_COLOR_THEME, (int32_t)s_settings.color_theme);
+  persist_write_int(PERSIST_DARK_MODE,   s_settings.dark_mode ? 1 : 0);
 
   // Reposition layers in case layout changed
   if (s_window_layer) {
@@ -1368,6 +1387,35 @@ static void prv_unobstructed_did_change(void *context) {
   prv_layout_for_bounds(bounds);
 }
 
+// ─── Theme Re-apply ──────────────────────────────────────────────────────────
+// Most colors are read from s_theme at draw time, but a handful of TextLayers
+// are only colored once at creation in main_window_load. When the theme
+// changes after the window already exists (i.e. from inbox_received_handler),
+// those layers need their colors re-pushed explicitly.
+static void apply_theme_to_layers(void) {
+  if (s_main_window) window_set_background_color(s_main_window, s_theme.bg);
+
+  if (s_simple_bt_layer)    text_layer_set_text_color(s_simple_bt_layer, s_theme.icon_default);
+  if (s_simple_music_layer) text_layer_set_text_color(s_simple_music_layer, s_theme.icon_subtle);
+  if (s_simple_day_layer)   text_layer_set_text_color(s_simple_day_layer, s_theme.text_subtle);
+  if (s_simple_month_layer) text_layer_set_text_color(s_simple_month_layer, s_theme.text_subtle);
+
+  GColor digit_colors[4] = {
+    s_theme.text_subtle, s_theme.text_inverted, s_theme.text_inverted, s_theme.text_default
+  };
+  for (int i = 0; i < 4; i++) {
+    if (s_simple_digit[i]) text_layer_set_text_color(s_simple_digit[i], digit_colors[i]);
+  }
+
+  if (s_dash_bt_layer)    text_layer_set_text_color(s_dash_bt_layer, s_theme.icon_default);
+  if (s_dash_day_layer)   text_layer_set_text_color(s_dash_day_layer, s_theme.text_subtle);
+  if (s_dash_month_layer) text_layer_set_text_color(s_dash_month_layer, s_theme.text_subtle);
+  if (s_dash_time_layer)  text_layer_set_text_color(s_dash_time_layer, s_theme.text_inverted);
+  if (s_dash_unit_layer)  text_layer_set_text_color(s_dash_unit_layer, s_theme.text_subtle);
+
+  if (s_window_layer) layer_mark_dirty(s_window_layer);
+}
+
 // ─── Window Load / Unload ────────────────────────────────────────────────────
 
 static void main_window_load(Window *window) {
@@ -1376,7 +1424,7 @@ static void main_window_load(Window *window) {
   int w = bounds.size.w;
   int h = bounds.size.h;
 
-  window_set_background_color(window, GColorBlack);
+  window_set_background_color(window, s_theme.bg);
 
   // Load custom fonts
   s_time_font           = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_TIME_DIGITS_64));
@@ -1391,10 +1439,10 @@ static void main_window_load(Window *window) {
   // Colors per Figma: H1=text/subtle, H2=text/inverted, M1=text/inverted, M2=text/default.
   // H1/M1 right-aligned, H2/M2 left-aligned.
   GColor digit_colors[4] = {
-    CLR_TEXT_SUBTLE,    // H1 — #AAFFFF text/subtle
-    CLR_TEXT_INVERTED,  // H2 — #FFFFFF text/inverted
-    CLR_TEXT_INVERTED,  // M1 — #FFFFFF text/inverted
-    CLR_TEXT_DEFAULT    // M2 — #00FFFF text/default
+    s_theme.text_subtle,    // H1 — text/subtle
+    s_theme.text_inverted,  // H2 — text/inverted
+    s_theme.text_inverted,  // M1 — text/inverted
+    s_theme.text_default    // M2 — text/default
   };
   GTextAlignment digit_aligns[4] = {
     GTextAlignmentCenter,  // H1
@@ -1430,14 +1478,14 @@ static void main_window_load(Window *window) {
   // ── Simple: status + date ──
   s_simple_bt_layer = text_layer_create(GRect(92, 4, 16, 16));
   text_layer_set_background_color(s_simple_bt_layer, GColorClear);
-  text_layer_set_text_color(s_simple_bt_layer, CLR_ICON_DEFAULT);
+  text_layer_set_text_color(s_simple_bt_layer, s_theme.icon_default);
   if (s_symbol_font) text_layer_set_font(s_simple_bt_layer, s_symbol_font);
   text_layer_set_text_alignment(s_simple_bt_layer, GTextAlignmentCenter);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_bt_layer));
 
   s_simple_music_layer = text_layer_create(GRect(92, 208, 16, 16));
   text_layer_set_background_color(s_simple_music_layer, GColorClear);
-  text_layer_set_text_color(s_simple_music_layer, CLR_ICON_SUBTLE);
+  text_layer_set_text_color(s_simple_music_layer, s_theme.icon_subtle);
   if (s_symbol_font) text_layer_set_font(s_simple_music_layer, s_symbol_font);
   text_layer_set_text_alignment(s_simple_music_layer, GTextAlignmentCenter);
   text_layer_set_text(s_simple_music_layer, ICON_MUSIC);
@@ -1445,14 +1493,14 @@ static void main_window_load(Window *window) {
 
   s_simple_day_layer = text_layer_create(GRect(4, 106, 18, 16));
   text_layer_set_background_color(s_simple_day_layer, GColorClear);
-  text_layer_set_text_color(s_simple_day_layer, CLR_TEXT_SUBTLE);
+  text_layer_set_text_color(s_simple_day_layer, s_theme.text_subtle);
   text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_day_layer));
 
   s_simple_month_layer = text_layer_create(GRect(178, 106, 18, 16));
   text_layer_set_background_color(s_simple_month_layer, GColorClear);
-  text_layer_set_text_color(s_simple_month_layer, CLR_TEXT_SUBTLE);
+  text_layer_set_text_color(s_simple_month_layer, s_theme.text_subtle);
   text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentLeft);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_month_layer));
@@ -1460,7 +1508,7 @@ static void main_window_load(Window *window) {
   // ── Dashboard: time row ──
   s_dash_time_layer = text_layer_create(GRect(24, 76, 144, 44));
   text_layer_set_background_color(s_dash_time_layer, GColorClear);
-  text_layer_set_text_color(s_dash_time_layer, GColorWhite);
+  text_layer_set_text_color(s_dash_time_layer, s_theme.text_inverted);
   text_layer_set_font(s_dash_time_layer, fonts_get_system_font(FONT_KEY_LECO_36_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_dash_time_layer, GTextAlignmentCenter);
   text_layer_set_text(s_dash_time_layer, "00:00");
@@ -1468,21 +1516,21 @@ static void main_window_load(Window *window) {
 
   s_dash_bt_layer = text_layer_create(GRect(4, 80, 16, 16));
   text_layer_set_background_color(s_dash_bt_layer, GColorClear);
-  text_layer_set_text_color(s_dash_bt_layer, CLR_ICON_DEFAULT);
+  text_layer_set_text_color(s_dash_bt_layer, s_theme.icon_default);
   if (s_symbol_font) text_layer_set_font(s_dash_bt_layer, s_symbol_font);
   text_layer_set_text_alignment(s_dash_bt_layer, GTextAlignmentCenter);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_bt_layer));
 
   s_dash_day_layer = text_layer_create(GRect(176, 74, 20, 14));
   text_layer_set_background_color(s_dash_day_layer, GColorClear);
-  text_layer_set_text_color(s_dash_day_layer, CLR_TEXT_SUBTLE);
+  text_layer_set_text_color(s_dash_day_layer, s_theme.text_subtle);
   text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_dash_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_day_layer));
 
   s_dash_month_layer = text_layer_create(GRect(176, 94, 20, 14));
   text_layer_set_background_color(s_dash_month_layer, GColorClear);
-  text_layer_set_text_color(s_dash_month_layer, CLR_TEXT_SUBTLE);
+  text_layer_set_text_color(s_dash_month_layer, s_theme.text_subtle);
   text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_dash_month_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_month_layer));
@@ -1490,14 +1538,14 @@ static void main_window_load(Window *window) {
   // ── Dashboard: CGM panel ──
   s_dash_trend_layer = text_layer_create(GRect(128, 130, 68, 20));
   text_layer_set_background_color(s_dash_trend_layer, GColorClear);
-  text_layer_set_text_color(s_dash_trend_layer, GColorLightGray);
+  text_layer_set_text_color(s_dash_trend_layer, s_theme.state_inactive);
   if (s_symbol_font) text_layer_set_font(s_dash_trend_layer, s_symbol_font);
   text_layer_set_text_alignment(s_dash_trend_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_trend_layer));
 
   s_dash_glucose_layer = text_layer_create(GRect(128, 152, 68, 30));
   text_layer_set_background_color(s_dash_glucose_layer, GColorClear);
-  text_layer_set_text_color(s_dash_glucose_layer, GColorMintGreen);
+  text_layer_set_text_color(s_dash_glucose_layer, s_theme.state_positive);
   text_layer_set_font(s_dash_glucose_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(s_dash_glucose_layer, GTextAlignmentRight);
   text_layer_set_text(s_dash_glucose_layer, "--");
@@ -1505,7 +1553,7 @@ static void main_window_load(Window *window) {
 
   s_dash_unit_layer = text_layer_create(GRect(128, 182, 68, 14));
   text_layer_set_background_color(s_dash_unit_layer, GColorClear);
-  text_layer_set_text_color(s_dash_unit_layer, GColorMediumAquamarine);
+  text_layer_set_text_color(s_dash_unit_layer, s_theme.text_subtle);
   text_layer_set_font(s_dash_unit_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_dash_unit_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_unit_layer));
@@ -1678,13 +1726,17 @@ static void init(void) {
   if (persist_exists(PERSIST_WEATHER_ICN)) s_weather_icon          = (uint8_t)persist_read_int(PERSIST_WEATHER_ICN);
   if (persist_exists(PERSIST_WEATHER_MIN)) s_weather_tmin          = (int8_t)persist_read_int(PERSIST_WEATHER_MIN);
   if (persist_exists(PERSIST_WEATHER_MAX)) s_weather_tmax          = (int8_t)persist_read_int(PERSIST_WEATHER_MAX);
+  if (persist_exists(PERSIST_COLOR_THEME)) s_settings.color_theme  = (ColorThemeId)persist_read_int(PERSIST_COLOR_THEME);
+  if (persist_exists(PERSIST_DARK_MODE))   s_settings.dark_mode    = persist_read_int(PERSIST_DARK_MODE) != 0;
 
 #ifdef DEMO_DATA
   apply_demo_state(DEMO_STATE);
 #endif
 
+  apply_theme();
+
   s_main_window = window_create();
-  window_set_background_color(s_main_window, GColorBlack);
+  window_set_background_color(s_main_window, s_theme.bg);
   window_set_window_handlers(s_main_window, (WindowHandlers){
     .load   = main_window_load,
     .unload = main_window_unload

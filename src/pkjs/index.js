@@ -34,6 +34,8 @@ var KEY_VIBE_LOW         = 23;
 var KEY_VIBE_HIGH        = 24;
 var KEY_VIBE_URGENT_LOW  = 25;
 var KEY_VIBE_URGENT_HIGH = 26;
+var KEY_COLOR_THEME      = 28;
+var KEY_DARK_MODE        = 29;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -60,7 +62,8 @@ function loadSettings() {
     'highThresh', 'lowThresh', 'urgentHigh', 'urgentLow',
     'alertsEnabled', 'vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh',
     'dataSource', 'graphWindow',
-    'layout', 'slot0', 'slot1', 'slot2', 'slot3'
+    'layout', 'slot0', 'slot1', 'slot2', 'slot3',
+    'colorTheme', 'darkMode'
   ];
   keys.forEach(function(k) {
     var v = localStorage.getItem('steady_' + k);
@@ -84,6 +87,8 @@ function loadSettings() {
   if (!settings.slot1)       settings.slot1       = '1';  // SLOT_BATTERY
   if (!settings.slot2)       settings.slot2       = '5';  // SLOT_CGM
   if (!settings.slot3)       settings.slot3       = '3';  // SLOT_HEART_RATE
+  if (!settings.colorTheme)  settings.colorTheme  = '4';  // COLOR_THEME_CYAN
+  if (!settings.darkMode)    settings.darkMode    = '1';
 }
 
 function saveSettings(data) {
@@ -122,6 +127,8 @@ function sendToWatch(glucose, trend, delta, lastReadSec, graphArray) {
   msg[KEY_SLOT_1]          = parseInt(settings.slot1)      || 0;
   msg[KEY_SLOT_2]          = parseInt(settings.slot2)      || 0;
   msg[KEY_SLOT_3]          = parseInt(settings.slot3)      || 0;
+  msg[KEY_COLOR_THEME]     = parseInt(settings.colorTheme) || 0;
+  msg[KEY_DARK_MODE]       = parseInt(settings.darkMode)   || 0;
 
   Pebble.sendAppMessage(msg,
     function()  { console.log('Steady: CGM data sent OK'); },
@@ -479,7 +486,9 @@ Pebble.addEventListener('showConfiguration', function() {
     '&slot0='       + encodeURIComponent(settings.slot0       || '2') +
     '&slot1='       + encodeURIComponent(settings.slot1       || '1') +
     '&slot2='       + encodeURIComponent(settings.slot2       || '5') +
-    '&slot3='       + encodeURIComponent(settings.slot3       || '3');
+    '&slot3='       + encodeURIComponent(settings.slot3       || '3') +
+    '&colorTheme='  + encodeURIComponent(settings.colorTheme  || '4') +
+    '&darkMode='    + encodeURIComponent(settings.darkMode    || '1');
   Pebble.openURL(url);
 });
 
@@ -499,6 +508,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
       msg[KEY_SLOT_1] = parseInt(data.slot1)  || 0;
       msg[KEY_SLOT_2] = parseInt(data.slot2)  || 0;
       msg[KEY_SLOT_3] = parseInt(data.slot3)  || 0;
+      msg[KEY_COLOR_THEME] = parseInt(data.colorTheme) || 0;
+      msg[KEY_DARK_MODE]   = parseInt(data.darkMode)   || 0;
       Pebble.sendAppMessage(msg, function(){}, function(){});
       fetchData();
     } catch(err) {
