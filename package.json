@@ -20,7 +20,7 @@
     "description": "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 8 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in.",
     "capabilities": ["configurable", "health"],
     "enableMultiJS": true,
-    "longDescription": "Steady is a clean watchface with a large clock and 4 configurable widget slots: battery, weather, heart rate, steps, or glucose.\n\nThe CGM widget keeps glucose visible without taking over the design. Built for people with diabetes who want a watchface, not a medical device. Supports Nightscout and Dexcom Share.\n\n8 color themes with light, dark, or automatic mode, and a vibration alert per glucose threshold.\n\nRuns on Pebble Time 2 (Emery) and Pebble Round 2 (Gabbro). More Pebble models coming soon.",
+    "longDescription": "Steady is a clean watchface with a large clock and 4 configurable widget slots, built for people with diabetes who want a watchface, not a medical device. The CGM widget keeps glucose visible without taking over the design.\n\n8 color themes with light, dark, or automatic mode, and a vibration alert per glucose threshold.\n\nAvailable widgets:\n- Battery\n- Weather\n- Heart rate\n- Steps\n- Glucose (CGM, supports Nightscout and Dexcom Share)\nMore widgets coming soon.\n\nRuns on Pebble Time 2 (Emery) and Pebble Round 2 (Gabbro). More Pebble models coming soon.",
     "messageKeys": {
       "KEY_GLUCOSE_VALUE":  0,
       "KEY_GLUCOSE_TREND":  1,
