@@ -34,6 +34,8 @@ var KEY_VIBE_LOW         = 23;
 var KEY_VIBE_HIGH        = 24;
 var KEY_VIBE_URGENT_LOW  = 25;
 var KEY_VIBE_URGENT_HIGH = 26;
+var KEY_COLOR_THEME      = 28;
+var KEY_DARK_MODE        = 29;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -60,7 +62,8 @@ function loadSettings() {
     'highThresh', 'lowThresh', 'urgentHigh', 'urgentLow',
     'alertsEnabled', 'vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh',
     'dataSource', 'graphWindow',
-    'layout', 'slot0', 'slot1', 'slot2', 'slot3'
+    'layout', 'slot0', 'slot1', 'slot2', 'slot3',
+    'colorTheme', 'darkMode'
   ];
   keys.forEach(function(k) {
     var v = localStorage.getItem('steady_' + k);
@@ -84,6 +87,8 @@ function loadSettings() {
   if (!settings.slot1)       settings.slot1       = '1';  // SLOT_BATTERY
   if (!settings.slot2)       settings.slot2       = '5';  // SLOT_CGM
   if (!settings.slot3)       settings.slot3       = '3';  // SLOT_HEART_RATE
+  if (!settings.colorTheme)  settings.colorTheme  = '4';  // COLOR_THEME_CYAN
+  if (!settings.darkMode)    settings.darkMode    = '1';
 }
 
 function saveSettings(data) {
@@ -91,6 +96,25 @@ function saveSettings(data) {
     localStorage.setItem('steady_' + k, data[k]);
   });
   loadSettings();
+}
+
+// ─── Auto Dark Mode (sunrise/sunset) ─────────────────────────────────────────
+// Populated from Open-Meteo's daily sunrise/sunset (same call as the weather
+// slot, timezone=auto so these are already in local time). Stays null until
+// the first successful weather fetch; resolveDarkMode() falls back to dark
+// in that case.
+var s_sunrise = null;
+var s_sunset  = null;
+
+function resolveDarkMode() {
+  var mode = settings.darkMode;
+  if (mode === '0') return 0;
+  if (mode === '2') {
+    if (!s_sunrise || !s_sunset) return 1;  // unknown yet: default dark
+    var now = new Date();
+    return (now >= s_sunrise && now < s_sunset) ? 0 : 1;
+  }
+  return 1;  // '1' or unset
 }
 
 // ─── Send CGM data to watch ──────────────────────────────────────────────────
@@ -122,6 +146,8 @@ function sendToWatch(glucose, trend, delta, lastReadSec, graphArray) {
   msg[KEY_SLOT_1]          = parseInt(settings.slot1)      || 0;
   msg[KEY_SLOT_2]          = parseInt(settings.slot2)      || 0;
   msg[KEY_SLOT_3]          = parseInt(settings.slot3)      || 0;
+  msg[KEY_COLOR_THEME]     = parseInt(settings.colorTheme) || 0;
+  msg[KEY_DARK_MODE]       = resolveDarkMode();
 
   Pebble.sendAppMessage(msg,
     function()  { console.log('Steady: CGM data sent OK'); },
@@ -154,7 +180,7 @@ function fetchWeather() {
         '?latitude='  + lat +
         '&longitude=' + lon +
         '&current=temperature_2m,weather_code' +
-        '&daily=temperature_2m_min,temperature_2m_max' +
+        '&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset' +
         '&timezone=auto' +
         '&forecast_days=1' +
         '&temperature_unit=celsius';
@@ -180,6 +206,15 @@ function fetchWeather() {
             }
             msg[KEY_WEATHER_TMIN] = tmin;
             msg[KEY_WEATHER_TMAX] = tmax;
+
+            if (data.daily && data.daily.sunrise && data.daily.sunset) {
+              var rawSunrise = data.daily.sunrise[0];
+              var rawSunset  = data.daily.sunset[0];
+              if (rawSunrise) s_sunrise = new Date(rawSunrise);
+              if (rawSunset)  s_sunset  = new Date(rawSunset);
+            }
+            if (settings.darkMode === '2') msg[KEY_DARK_MODE] = resolveDarkMode();
+
             Pebble.sendAppMessage(msg,
               function()  { console.log('Steady: weather sent OK (' + temp + 'C [' + tmin + ',' + tmax + '] icon=' + icon + ')'); },
               function(e) { console.error('Steady: weather send failed: ' + JSON.stringify(e)); }
@@ -479,7 +514,9 @@ Pebble.addEventListener('showConfiguration', function() {
     '&slot0='       + encodeURIComponent(settings.slot0       || '2') +
     '&slot1='       + encodeURIComponent(settings.slot1       || '1') +
     '&slot2='       + encodeURIComponent(settings.slot2       || '5') +
-    '&slot3='       + encodeURIComponent(settings.slot3       || '3');
+    '&slot3='       + encodeURIComponent(settings.slot3       || '3') +
+    '&colorTheme='  + encodeURIComponent(settings.colorTheme  || '4') +
+    '&darkMode='    + encodeURIComponent(settings.darkMode    || '1');
   Pebble.openURL(url);
 });
 
@@ -499,8 +536,11 @@ Pebble.addEventListener('webviewclosed', function(e) {
       msg[KEY_SLOT_1] = parseInt(data.slot1)  || 0;
       msg[KEY_SLOT_2] = parseInt(data.slot2)  || 0;
       msg[KEY_SLOT_3] = parseInt(data.slot3)  || 0;
+      msg[KEY_COLOR_THEME] = parseInt(data.colorTheme) || 0;
+      msg[KEY_DARK_MODE]   = resolveDarkMode();
       Pebble.sendAppMessage(msg, function(){}, function(){});
       fetchData();
+      if (settings.darkMode === '2') fetchWeather();
     } catch(err) {
       console.error('Steady: config parse error: ' + err);
     }
