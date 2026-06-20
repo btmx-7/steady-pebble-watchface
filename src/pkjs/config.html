@@ -122,6 +122,11 @@
     }
     .slot-grid .field:nth-child(2n) { border-right: none; }
     .slot-grid .field:nth-last-child(-n+2) { border-bottom: none; }
+    .vibe-picker {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .vibe-picker .field-hint { margin-top: 0; }
     .save-btn {
       display: block;
       width: calc(100% - 32px);
@@ -304,12 +309,34 @@
           <span class="field-hint">mg/dL (default 70)</span>
         </div>
         <input type="number" id="lowThresh" value="70" min="40" max="100">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeLow">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
       <div class="field field-full">
         <div class="field-label">High
           <span class="field-hint">mg/dL (default 180)</span>
         </div>
         <input type="number" id="highThresh" value="180" min="120" max="300">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeHigh">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="threshold-row">
@@ -318,73 +345,34 @@
           <span class="field-hint">mg/dL (default 55)</span>
         </div>
         <input type="number" id="urgentLow" value="55" min="40" max="80">
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeUrgentLow">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
+        </div>
       </div>
       <div class="field field-full">
         <div class="field-label">Urgent High
           <span class="field-hint">mg/dL (default 250)</span>
         </div>
         <input type="number" id="urgentHigh" value="250" min="200" max="400">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Vibration Types -->
-<div class="section" id="vibe-section">
-  <div class="section-title">Vibration Type</div>
-  <div class="card">
-    <div class="slot-grid">
-      <div class="field field-full">
-        <div class="field-label">Low
-          <span class="field-hint">Below the Low threshold</span>
+        <div class="vibe-picker">
+          <span class="field-hint">Vibration</span>
+          <select id="vibeUrgentHigh">
+            <option value="0">None</option>
+            <option value="4">Tap</option>
+            <option value="5">Nudge Nudge</option>
+            <option value="1">Short Pulse</option>
+            <option value="2">Long Pulse</option>
+            <option value="3">Double Pulse</option>
+          </select>
         </div>
-        <select id="vibeLow">
-          <option value="0">None</option>
-          <option value="4">Tap</option>
-          <option value="5">Nudge Nudge</option>
-          <option value="1">Short Pulse</option>
-          <option value="2">Long Pulse</option>
-          <option value="3">Double Pulse</option>
-        </select>
-      </div>
-      <div class="field field-full">
-        <div class="field-label">High
-          <span class="field-hint">Above the High threshold</span>
-        </div>
-        <select id="vibeHigh">
-          <option value="0">None</option>
-          <option value="4">Tap</option>
-          <option value="5">Nudge Nudge</option>
-          <option value="1">Short Pulse</option>
-          <option value="2">Long Pulse</option>
-          <option value="3">Double Pulse</option>
-        </select>
-      </div>
-      <div class="field field-full">
-        <div class="field-label">Urgent Low
-          <span class="field-hint">Below Urgent Low</span>
-        </div>
-        <select id="vibeUrgentLow">
-          <option value="0">None</option>
-          <option value="4">Tap</option>
-          <option value="5">Nudge Nudge</option>
-          <option value="1">Short Pulse</option>
-          <option value="2">Long Pulse</option>
-          <option value="3">Double Pulse</option>
-        </select>
-      </div>
-      <div class="field field-full">
-        <div class="field-label">Urgent High
-          <span class="field-hint">Above Urgent High</span>
-        </div>
-        <select id="vibeUrgentHigh">
-          <option value="0">None</option>
-          <option value="4">Tap</option>
-          <option value="5">Nudge Nudge</option>
-          <option value="1">Short Pulse</option>
-          <option value="2">Long Pulse</option>
-          <option value="3">Double Pulse</option>
-        </select>
       </div>
     </div>
   </div>
@@ -432,10 +420,12 @@
   });
   document.getElementById('dataSource').dispatchEvent(new Event('change'));
 
-  // Vibration types only matter when alerts are enabled
+  // Vibration pickers only matter when alerts are enabled
   document.getElementById('alertsEnabled').addEventListener('change', function() {
-    document.getElementById('vibe-section').style.display =
-      this.checked ? 'block' : 'none';
+    var display = this.checked ? 'block' : 'none';
+    document.querySelectorAll('.vibe-picker').forEach(function(el) {
+      el.style.display = display;
+    });
   });
   document.getElementById('alertsEnabled').dispatchEvent(new Event('change'));
 
