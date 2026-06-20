@@ -33,6 +33,6 @@ The settings page MUST let the user turn glucose threshold vibration alerts on o
 
 - **WHEN** "Threshold Alerts" is on
 - **THEN** a "Vibration Type" section is shown with 4 independent selects — Low, High, Urgent Low, Urgent High
-- **AND** each select offers the OS-native vibration primitives exposed by the Pebble SDK: None, Short Pulse, Long Pulse, Double Pulse
+- **AND** each select offers: None, Tap (a brief custom pulse, weaker than Short Pulse, for users who find the OS primitives too strong), and the OS-native vibration primitives exposed by the Pebble SDK: Short Pulse, Long Pulse, Double Pulse
 - **AND** the saved choice for each threshold determines the haptic pattern fired when glucose crosses that specific threshold, independently of the other thresholds
 
