@@ -10,6 +10,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0d0d0d;
       color: #fff;
+      font-size: 16px;
       padding: 0 0 40px 0;
     }
     .header {
@@ -18,12 +19,12 @@
       text-align: center;
     }
     .header h1 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       letter-spacing: 1px;
     }
     .header p {
-      font-size: 13px;
+      font-size: 16px;
       opacity: 0.8;
       margin-top: 4px;
     }
@@ -31,7 +32,7 @@
       margin: 20px 16px 0;
     }
     .section-title {
-      font-size: 11px;
+      font-size: 14px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -53,12 +54,12 @@
     .field:last-child { border-bottom: none; }
     .field-label {
       flex: 1;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
     }
     .field-hint {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       color: #888;
       margin-top: 2px;
     }
@@ -67,7 +68,7 @@
       border: 1px solid #3a3a3a;
       border-radius: 8px;
       color: #fff;
-      font-size: 14px;
+      font-size: 16px;
       padding: 8px 12px;
       width: 100%;
       margin-top: 8px;
@@ -111,6 +112,16 @@
     }
     .threshold-row .field { border-right: 1px solid #2a2a2a; }
     .threshold-row .field:last-child { border-right: none; }
+    .slot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .slot-grid .field {
+      border-right: 1px solid #2a2a2a;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .slot-grid .field:nth-child(2n) { border-right: none; }
+    .slot-grid .field:nth-last-child(-n+2) { border-bottom: none; }
     .save-btn {
       display: block;
       width: calc(100% - 32px);
@@ -118,7 +129,7 @@
       padding: 16px;
       background: #00bcd4;
       color: #000;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       border: none;
       border-radius: 12px;
@@ -126,22 +137,6 @@
       letter-spacing: 0.5px;
     }
     .save-btn:active { opacity: 0.8; }
-    .zone-preview {
-      display: flex;
-      gap: 6px;
-      margin: 12px 16px 0;
-      padding: 12px;
-      background: #1a1a1a;
-      border-radius: 12px;
-    }
-    .zone-chip {
-      flex: 1;
-      text-align: center;
-      padding: 6px 4px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-    }
     select option { background: #1a1a1a; }
   </style>
 </head>
@@ -156,57 +151,59 @@
 <div class="section">
   <div class="section-title">Widget Slots</div>
   <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Slot A — Top Left
-        <span class="field-hint">Top-left corner</span>
+    <div class="slot-grid">
+      <div class="field field-full">
+        <div class="field-label">Slot A — Top Left
+          <span class="field-hint">Top-left corner</span>
+        </div>
+        <select id="slot0">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot0">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot B — Top Right
-        <span class="field-hint">Top-right corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot B — Top Right
+          <span class="field-hint">Top-right corner</span>
+        </div>
+        <select id="slot1">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot1">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot C — Bottom Left
-        <span class="field-hint">Bottom-left corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot C — Bottom Left
+          <span class="field-hint">Bottom-left corner</span>
+        </div>
+        <select id="slot2">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot2">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Slot D — Bottom Right
-        <span class="field-hint">Bottom-right corner</span>
+      <div class="field field-full">
+        <div class="field-label">Slot D — Bottom Right
+          <span class="field-hint">Bottom-right corner</span>
+        </div>
+        <select id="slot3">
+          <option value="0">None</option>
+          <option value="1">Battery</option>
+          <option value="2">Weather</option>
+          <option value="3">Heart Rate</option>
+          <option value="4">Steps</option>
+          <option value="5">Glucose (CGM)</option>
+        </select>
       </div>
-      <select id="slot3">
-        <option value="0">None</option>
-        <option value="1">Battery</option>
-        <option value="2">Weather</option>
-        <option value="3">Heart Rate</option>
-        <option value="4">Steps</option>
-        <option value="5">Glucose (CGM)</option>
-      </select>
     </div>
   </div>
 </div>
@@ -287,19 +284,6 @@
   </div>
 </div>
 
-<!-- Zone Previews -->
-<div class="section">
-  <div class="section-title">Zone Previews</div>
-  <div class="card">
-    <div class="zone-preview">
-      <div class="zone-chip" style="background:#c62828; color:#fff">URGENT<br>LOW</div>
-      <div class="zone-chip" style="background:#e65100; color:#fff">LOW</div>
-      <div class="zone-chip" style="background:#1b5e20; color:#fff">IN<br>RANGE</div>
-      <div class="zone-chip" style="background:#f57f17; color:#000">HIGH</div>
-      <div class="zone-chip" style="background:#c62828; color:#fff">URGENT<br>HIGH</div>
-    </div>
-  </div>
-</div>
 
 <!-- Alert Thresholds -->
 <div class="section">
