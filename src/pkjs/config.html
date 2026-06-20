@@ -298,17 +298,6 @@
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <div class="field field-full" id="vibePattern-field">
-      <div class="field-label">Vibration Type
-        <span class="field-hint">Haptic pattern used for alerts</span>
-      </div>
-      <select id="vibePattern">
-        <option value="0">Standard</option>
-        <option value="1">Short</option>
-        <option value="2">Long</option>
-        <option value="3">Double</option>
-      </select>
-    </div>
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Low
@@ -326,15 +315,68 @@
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Urgent Low
-          <span class="field-hint">Stronger haptic pattern</span>
+          <span class="field-hint">mg/dL (default 55)</span>
         </div>
         <input type="number" id="urgentLow" value="55" min="40" max="80">
       </div>
       <div class="field field-full">
         <div class="field-label">Urgent High
-          <span class="field-hint">Stronger haptic pattern</span>
+          <span class="field-hint">mg/dL (default 250)</span>
         </div>
         <input type="number" id="urgentHigh" value="250" min="200" max="400">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vibration Types -->
+<div class="section" id="vibe-section">
+  <div class="section-title">Vibration Type</div>
+  <div class="card">
+    <div class="slot-grid">
+      <div class="field field-full">
+        <div class="field-label">Low
+          <span class="field-hint">Below the Low threshold</span>
+        </div>
+        <select id="vibeLow">
+          <option value="0">None</option>
+          <option value="1">Short Pulse</option>
+          <option value="2">Long Pulse</option>
+          <option value="3">Double Pulse</option>
+        </select>
+      </div>
+      <div class="field field-full">
+        <div class="field-label">High
+          <span class="field-hint">Above the High threshold</span>
+        </div>
+        <select id="vibeHigh">
+          <option value="0">None</option>
+          <option value="1">Short Pulse</option>
+          <option value="2">Long Pulse</option>
+          <option value="3">Double Pulse</option>
+        </select>
+      </div>
+      <div class="field field-full">
+        <div class="field-label">Urgent Low
+          <span class="field-hint">Below Urgent Low</span>
+        </div>
+        <select id="vibeUrgentLow">
+          <option value="0">None</option>
+          <option value="1">Short Pulse</option>
+          <option value="2">Long Pulse</option>
+          <option value="3">Double Pulse</option>
+        </select>
+      </div>
+      <div class="field field-full">
+        <div class="field-label">Urgent High
+          <span class="field-hint">Above Urgent High</span>
+        </div>
+        <select id="vibeUrgentHigh">
+          <option value="0">None</option>
+          <option value="1">Short Pulse</option>
+          <option value="2">Long Pulse</option>
+          <option value="3">Double Pulse</option>
+        </select>
       </div>
     </div>
   </div>
@@ -362,7 +404,10 @@
   // Display
   document.getElementById('useMmol').checked   = params.useMmol === '1';
   document.getElementById('alertsEnabled').checked = params.alertsEnabled !== '0';
-  document.getElementById('vibePattern').value = params.vibePattern  || '0';
+  document.getElementById('vibeLow').value         = params.vibeLow         || '1';  // Short Pulse
+  document.getElementById('vibeHigh').value        = params.vibeHigh        || '1';  // Short Pulse
+  document.getElementById('vibeUrgentLow').value   = params.vibeUrgentLow   || '3';  // Double Pulse
+  document.getElementById('vibeUrgentHigh').value  = params.vibeUrgentHigh  || '3';  // Double Pulse
   document.getElementById('lowThresh').value   = params.lowThresh   || '70';
   document.getElementById('highThresh').value  = params.highThresh  || '180';
   document.getElementById('urgentLow').value   = params.urgentLow   || '55';
@@ -379,10 +424,10 @@
   });
   document.getElementById('dataSource').dispatchEvent(new Event('change'));
 
-  // Vibration type only matters when alerts are enabled
+  // Vibration types only matter when alerts are enabled
   document.getElementById('alertsEnabled').addEventListener('change', function() {
-    document.getElementById('vibePattern-field').style.display =
-      this.checked ? 'flex' : 'none';
+    document.getElementById('vibe-section').style.display =
+      this.checked ? 'block' : 'none';
   });
   document.getElementById('alertsEnabled').dispatchEvent(new Event('change'));
 
@@ -399,8 +444,11 @@
       dexcomPass:  document.getElementById('dexcomPass').value,
       dataSource:  document.getElementById('dataSource').value,
       useMmol:     document.getElementById('useMmol').checked ? '1' : '0',
-      alertsEnabled: document.getElementById('alertsEnabled').checked ? '1' : '0',
-      vibePattern: document.getElementById('vibePattern').value,
+      alertsEnabled:   document.getElementById('alertsEnabled').checked ? '1' : '0',
+      vibeLow:         document.getElementById('vibeLow').value,
+      vibeHigh:        document.getElementById('vibeHigh').value,
+      vibeUrgentLow:   document.getElementById('vibeUrgentLow').value,
+      vibeUrgentHigh:  document.getElementById('vibeUrgentHigh').value,
       lowThresh:   document.getElementById('lowThresh').value,
       highThresh:  document.getElementById('highThresh').value,
       urgentLow:   document.getElementById('urgentLow').value,

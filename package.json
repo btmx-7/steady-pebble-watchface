@@ -45,7 +45,10 @@
       "KEY_MOCK_STEPS":     20,
       "KEY_DEBUG_INFO":     21,
       "KEY_ALERTS_ENABLED": 22,
-      "KEY_VIBE_PATTERN":   23
+      "KEY_VIBE_LOW":         23,
+      "KEY_VIBE_HIGH":        24,
+      "KEY_VIBE_URGENT_LOW":  25,
+      "KEY_VIBE_URGENT_HIGH": 26
     },
     "resources": {
       "media": [

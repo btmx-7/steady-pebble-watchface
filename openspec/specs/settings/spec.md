@@ -21,7 +21,7 @@ The settings page MUST expose a Graph Window selector so the user can choose how
 
 ### Requirement: Threshold Alert Vibration
 
-The settings page MUST let the user turn glucose threshold vibration alerts on or off, and choose which vibration pattern is used when an alert fires.
+The settings page MUST let the user turn glucose threshold vibration alerts on or off, and independently choose which Pebble OS-native vibration type is used for each of the four thresholds (Low, High, Urgent Low, Urgent High).
 
 #### Scenario: User disables threshold alerts
 
@@ -29,9 +29,10 @@ The settings page MUST let the user turn glucose threshold vibration alerts on o
 - **THEN** a "Threshold Alerts" toggle is shown, defaulting to on
 - **AND** turning it off and saving means the watch no longer vibrates when glucose crosses a low/high or urgent low/high threshold
 
-#### Scenario: User picks a vibration type
+#### Scenario: User picks a vibration type per threshold
 
 - **WHEN** "Threshold Alerts" is on
-- **THEN** a "Vibration Type" select is shown with options: Standard, Short, Long, Double
-- **AND** the saved choice determines the haptic pattern used for both warning (low/high) and urgent (urgent low/high) alerts, with urgent alerts always using a stronger variant of the chosen pattern
+- **THEN** a "Vibration Type" section is shown with 4 independent selects — Low, High, Urgent Low, Urgent High
+- **AND** each select offers the OS-native vibration primitives exposed by the Pebble SDK: None, Short Pulse, Long Pulse, Double Pulse
+- **AND** the saved choice for each threshold determines the haptic pattern fired when glucose crosses that specific threshold, independently of the other thresholds
 
