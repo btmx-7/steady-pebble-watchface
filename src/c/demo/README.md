@@ -18,25 +18,30 @@ include any of this code.
 theme, light/dark mode, and time-of-day combinations so a single sweep
 produces a visually diverse contact sheet rather than 8 near-identical shots.
 
-| # | Name          | Glucose | Trend       | Layout    | Slots (A,B,C,D)              | Theme  | Mode  | Time  |
-|---|---------------|---------|-------------|-----------|-------------------------------|--------|-------|-------|
-| 0 | `urgent_low`  | 45      | Double Down | Simple    | CGM, Battery, Weather, Steps  | Red    | Dark  | 06:42 |
-| 1 | `low`         | 65      | Single Down | Simple    | Battery, Steps, CGM, Weather  | Orange | Light | 09:15 |
-| 2 | `in_range`    | 120     | Flat        | Simple    | Steps, Weather, Battery, CGM  | Yellow | Dark  | 12:08 |
-| 3 | `high`        | 195     | Single Up   | Simple    | Weather, CGM, Steps, Battery  | Green  | Light | 14:53 |
-| 4 | `urgent_high` | 270     | Double Up   | Simple    | Steps, Battery, CGM, Weather  | Cyan   | Dark  | 17:27 |
-| 5 | `stale`       | 120     | None        | Simple    | Heart Rate, CGM, Battery, Weather | Blue | Light | 20:36 |
-| 6 | `dashboard`   | 142     | Flat        | Dashboard | Weather, Battery, Steps, (unused) | Purple | Dark | 22:14 |
-| 7 | `zero_state`  | 0       | None        | Simple    | None, None, None, None       | Pink   | Light | 00:05 |
+| # | Name          | Glucose | Trend       | Layout    | Slots (A,B,C,D)                 | CGM slot? | Theme  | Mode  | Time  |
+|---|---------------|---------|-------------|-----------|----------------------------------|-----------|--------|-------|-------|
+| 0 | `urgent_low`  | 45      | Double Down | Simple    | CGM, Battery, Weather, Steps     | Yes       | Red    | Dark  | 06:42 |
+| 1 | `low`         | 65      | Single Down | Simple    | Battery, Steps, Heart Rate, Weather | No     | Orange | Light | 09:15 |
+| 2 | `in_range`    | 120     | Flat        | Simple    | Steps, Weather, Battery, Heart Rate | No     | Yellow | Dark  | 12:08 |
+| 3 | `high`        | 195     | Single Up   | Simple    | Weather, Heart Rate, Steps, Battery | No     | Green  | Light | 14:53 |
+| 4 | `urgent_high` | 270     | Double Up   | Simple    | Steps, Battery, CGM, Weather     | Yes       | Cyan   | Dark  | 17:27 |
+| 5 | `stale`       | 120     | None        | Simple    | Heart Rate, CGM, Battery, Weather | Yes      | Blue   | Light | 20:36 |
+| 6 | `dashboard`   | 142     | Flat        | Dashboard | Weather, Battery, Steps, (unused) | No*      | Purple | Dark  | 22:14 |
+| 7 | `zero_state`  | 0       | None        | Simple    | None, None, None, None          | No        | Pink   | Light | 00:05 |
+
+\* `dashboard` has a dedicated CGM panel outside the slot grid, always shown
+for that layout regardless of slot config.
 
 Notes:
-- CGM's slot position rotates across A/B/C/D so the widget grid is exercised
-  in every position, not just one fixed spot.
+- Only **3 of 8** scenarios (`urgent_low`, `urgent_high`, `stale`) put CGM in
+  a slot — those are the states where the widget's distinctive styling
+  (zone color, gray/stale treatment) is the reason the scenario exists. The
+  other 5 cover the watchface configured *without* the CGM widget, so the
+  rest of the layout (Battery/Weather/Heart Rate/Steps) is QA'd on its own.
+- CGM's slot position still varies (A in `urgent_low`, C in `urgent_high`,
+  B in `stale`) across the scenarios that do use it.
 - Steps appears in 6 of the 8 scenarios (it was previously unused by any
-  scenario); `stale` and `zero_state` deliberately omit it to also cover
-  Heart Rate and the fully-empty grid.
-- `dashboard` has a dedicated CGM panel outside the slot grid, so its slots
-  showcase Weather/Battery/Steps instead of duplicating CGM as a widget.
+  scenario).
 - All 8 `ColorThemeId` values are used exactly once, split 4 dark / 4 light.
 - `Time` is the wall-clock time the screenshot sweep pins via `faketime`
   (see `scripts/screenshot-sweep.sh`); spread across the day for a
