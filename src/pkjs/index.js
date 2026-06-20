@@ -36,6 +36,7 @@ var KEY_VIBE_URGENT_LOW  = 25;
 var KEY_VIBE_URGENT_HIGH = 26;
 var KEY_COLOR_THEME      = 28;
 var KEY_DARK_MODE        = 29;
+var KEY_REQUEST_REFRESH  = 30;
 
 // ─── Trend direction mapping ─────────────────────────────────────────────────
 var TREND_MAP = {
@@ -382,7 +383,22 @@ function dexcomLogin(callback, isRetry) {
   });
 }
 
-function dexcomFetchReadings() {
+// Called whenever a readings request indicates the session is no longer
+// good (non-200 status, or a 200 with an empty body). Previously only a
+// literal HTTP 500 triggered this, so any other rejection status (401/403/
+// 400 are all plausible depending on which Dexcom Share server is hit) left
+// the dead sessionId in place — every following 5-minute poll kept reusing
+// it and failing forever, with no way out short of restarting pkjs. isRetry
+// guards against looping forever if the re-login itself doesn't fix it.
+function dexcomSessionExpired(reason, isRetry) {
+  console.error('Steady: Dexcom session invalid (' + reason + '), forcing re-login' +
+    (isRetry ? ' (retry already attempted)' : ''));
+  s_dexcom_session_id = null;
+  if (isRetry) return;
+  dexcomLogin(function(ok) { if (ok) dexcomFetchReadings(true); });
+}
+
+function dexcomFetchReadings(isRetry) {
   var count = parseInt(settings.graphWindow) || 37;
   var url = s_dexcom_base_url + DEXCOM_READINGS_URL +
     '?sessionId=' + s_dexcom_session_id +
@@ -402,8 +418,7 @@ function dexcomFetchReadings() {
     if (xhr.status === 200) {
       if (!xhr.responseText) {
         // Empty body: session expired/invalid. Force a fresh login next time.
-        console.error('Steady: Dexcom empty response, response="' + xhr.responseText + '"');
-        s_dexcom_session_id = null;
+        dexcomSessionExpired('empty response', isRetry);
         return;
       }
       try {
@@ -433,9 +448,10 @@ function dexcomFetchReadings() {
       } catch(e) {
         console.error('Steady: Dexcom parse error: ' + e.message + ', response="' + xhr.responseText + '"');
       }
-    } else if (xhr.status === 500) {
-      s_dexcom_session_id = null;
-      fetchDexcom();
+    } else {
+      // Any non-200 (401/403/400/500...) means the session is no longer
+      // accepted — not just 500, which is all the old code checked for.
+      dexcomSessionExpired('HTTP ' + xhr.status, isRetry);
     }
   };
   xhr.onerror = function() {
@@ -456,8 +472,8 @@ function fetchDexcom() {
       (settings.dexcomPass ? 'set' : 'MISSING') + ')');
     return;
   }
-  if (s_dexcom_session_id) dexcomFetchReadings();
-  else dexcomLogin(function(ok) { if (ok) dexcomFetchReadings(); });
+  if (s_dexcom_session_id) dexcomFetchReadings(false);
+  else dexcomLogin(function(ok) { if (ok) dexcomFetchReadings(false); });
 }
 
 // ─── Main Fetch ──────────────────────────────────────────────────────────────
@@ -487,6 +503,15 @@ Pebble.addEventListener('appmessage', function(e) {
   var debugInfo = payload[KEY_DEBUG_INFO] || payload['KEY_DEBUG_INFO'];
   if (debugInfo) {
     console.log('Steady: health debug — ' + debugInfo);
+    return;
+  }
+  // Watch noticed its data is stale (no successful fetch in a while — e.g.
+  // the phone's background JS got suspended by the OS) and is asking for a
+  // fresh poll instead of waiting on us to notice on our own.
+  var refreshRequested = payload[KEY_REQUEST_REFRESH] || payload['KEY_REQUEST_REFRESH'];
+  if (refreshRequested) {
+    console.log('Steady: watch requested a refresh (stale data)');
+    fetchData();
     return;
   }
   console.log('Steady: message from watch, payload=' + JSON.stringify(payload));

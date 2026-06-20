@@ -54,6 +54,11 @@ static ThemeColors s_theme;
 #define KEY_TEST_VIBE        27
 #define KEY_COLOR_THEME      28
 #define KEY_DARK_MODE        29
+// Watch -> phone: "my data is stale, please poll now." Backstop for when
+// pkjs's setInterval polling stalls (e.g. Android suspends the companion
+// app's background JS) — without this the watch just sits stale until the
+// user happens to open the config page, which forces a one-off fetch.
+#define KEY_REQUEST_REFRESH  30
 
 // ─── Persistence Keys ────────────────────────────────────────────────────────
 #define PERSIST_GLUCOSE     100
@@ -913,10 +918,39 @@ static void fire_alert_vibe(GlucoseZone zone) {
   fire_vibe_type(vibe_type);
 }
 
+// ─── Stale Data Watchdog ─────────────────────────────────────────────────────
+//
+// pkjs polls Nightscout/Dexcom on its own 5-minute setInterval with no
+// watch-side backstop: if that interval stalls (most commonly Android
+// suspending the companion app's background JS after a while), the watch
+// just sits on stale data forever — the only thing that has ever kicked it
+// loose is the user opening the config page, which forces a one-off
+// fetchData() in pkjs's webviewclosed handler. Nudge pkjs back to life
+// ourselves once data crosses the staleness threshold, throttled so we
+// don't spam the outbox every minute while waiting for a reply.
+static time_t s_last_refresh_request_sec = 0;
+
+static void prv_request_refresh_if_stale(void) {
+  if (!data_is_stale()) return;
+
+  time_t now = time(NULL);
+  if (s_last_refresh_request_sec != 0 &&
+      (now - s_last_refresh_request_sec) < (5 * 60)) {
+    return;
+  }
+  s_last_refresh_request_sec = now;
+
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) return;
+  dict_write_int32(iter, KEY_REQUEST_REFRESH, 1);
+  app_message_outbox_send();
+}
+
 // ─── Tick Handler ────────────────────────────────────────────────────────────
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update_time();
+  prv_request_refresh_if_stale();
 }
 
 // Forward declarations needed by inbox_received_handler
