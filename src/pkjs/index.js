@@ -98,6 +98,25 @@ function saveSettings(data) {
   loadSettings();
 }
 
+// ─── Auto Dark Mode (sunrise/sunset) ─────────────────────────────────────────
+// Populated from Open-Meteo's daily sunrise/sunset (same call as the weather
+// slot, timezone=auto so these are already in local time). Stays null until
+// the first successful weather fetch; resolveDarkMode() falls back to dark
+// in that case.
+var s_sunrise = null;
+var s_sunset  = null;
+
+function resolveDarkMode() {
+  var mode = settings.darkMode;
+  if (mode === '0') return 0;
+  if (mode === '2') {
+    if (!s_sunrise || !s_sunset) return 1;  // unknown yet: default dark
+    var now = new Date();
+    return (now >= s_sunrise && now < s_sunset) ? 0 : 1;
+  }
+  return 1;  // '1' or unset
+}
+
 // ─── Send CGM data to watch ──────────────────────────────────────────────────
 
 function sendToWatch(glucose, trend, delta, lastReadSec, graphArray) {
@@ -128,7 +147,7 @@ function sendToWatch(glucose, trend, delta, lastReadSec, graphArray) {
   msg[KEY_SLOT_2]          = parseInt(settings.slot2)      || 0;
   msg[KEY_SLOT_3]          = parseInt(settings.slot3)      || 0;
   msg[KEY_COLOR_THEME]     = parseInt(settings.colorTheme) || 0;
-  msg[KEY_DARK_MODE]       = parseInt(settings.darkMode)   || 0;
+  msg[KEY_DARK_MODE]       = resolveDarkMode();
 
   Pebble.sendAppMessage(msg,
     function()  { console.log('Steady: CGM data sent OK'); },
@@ -161,7 +180,7 @@ function fetchWeather() {
         '?latitude='  + lat +
         '&longitude=' + lon +
         '&current=temperature_2m,weather_code' +
-        '&daily=temperature_2m_min,temperature_2m_max' +
+        '&daily=temperature_2m_min,temperature_2m_max,sunrise,sunset' +
         '&timezone=auto' +
         '&forecast_days=1' +
         '&temperature_unit=celsius';
@@ -187,6 +206,15 @@ function fetchWeather() {
             }
             msg[KEY_WEATHER_TMIN] = tmin;
             msg[KEY_WEATHER_TMAX] = tmax;
+
+            if (data.daily && data.daily.sunrise && data.daily.sunset) {
+              var rawSunrise = data.daily.sunrise[0];
+              var rawSunset  = data.daily.sunset[0];
+              if (rawSunrise) s_sunrise = new Date(rawSunrise);
+              if (rawSunset)  s_sunset  = new Date(rawSunset);
+            }
+            if (settings.darkMode === '2') msg[KEY_DARK_MODE] = resolveDarkMode();
+
             Pebble.sendAppMessage(msg,
               function()  { console.log('Steady: weather sent OK (' + temp + 'C [' + tmin + ',' + tmax + '] icon=' + icon + ')'); },
               function(e) { console.error('Steady: weather send failed: ' + JSON.stringify(e)); }
@@ -509,9 +537,10 @@ Pebble.addEventListener('webviewclosed', function(e) {
       msg[KEY_SLOT_2] = parseInt(data.slot2)  || 0;
       msg[KEY_SLOT_3] = parseInt(data.slot3)  || 0;
       msg[KEY_COLOR_THEME] = parseInt(data.colorTheme) || 0;
-      msg[KEY_DARK_MODE]   = parseInt(data.darkMode)   || 0;
+      msg[KEY_DARK_MODE]   = resolveDarkMode();
       Pebble.sendAppMessage(msg, function(){}, function(){});
       fetchData();
+      if (settings.darkMode === '2') fetchWeather();
     } catch(err) {
       console.error('Steady: config parse error: ' + err);
     }

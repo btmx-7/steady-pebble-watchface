@@ -233,14 +233,15 @@
         <option value="7">Pink</option>
       </select>
     </div>
-    <div class="field">
-      <div class="field-label">Dark Mode
-        <span class="field-hint">Off uses a light background</span>
+    <div class="field field-full">
+      <div class="field-label">Light / Dark
+        <span class="field-hint">Auto switches at sunrise/sunset for your location</span>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="darkMode">
-        <span class="toggle-slider"></span>
-      </label>
+      <select id="darkMode">
+        <option value="0">Light</option>
+        <option value="1">Dark</option>
+        <option value="2">Auto</option>
+      </select>
     </div>
   </div>
 </div>
@@ -418,7 +419,7 @@
 
   // Appearance
   document.getElementById('colorTheme').value  = params.colorTheme || '4';  // Cyan
-  document.getElementById('darkMode').checked  = params.darkMode !== '0';
+  document.getElementById('darkMode').value    = params.darkMode  || '1';  // Dark
 
   // CGM source
   document.getElementById('nsUrl').value       = params.nsUrl      || '';
@@ -478,7 +479,7 @@
       slot2:       document.getElementById('slot2').value,
       slot3:       document.getElementById('slot3').value,
       colorTheme:  document.getElementById('colorTheme').value,
-      darkMode:    document.getElementById('darkMode').checked ? '1' : '0',
+      darkMode:    document.getElementById('darkMode').value,
       nsUrl:       document.getElementById('nsUrl').value,
       nsToken:     document.getElementById('nsToken').value,
       dexcomUser:  document.getElementById('dexcomUser').value,
