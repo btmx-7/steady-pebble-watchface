@@ -2,16 +2,19 @@
 # screenshot-sweep.sh
 #
 # Build + install + screenshot one PBW per demo scenario.
-# Requires a running emulator: `pebble install --emulator emery` once first.
 #
 # Each scenario pins a different wall-clock time (see TIMES below) so the
 # resulting screenshot set shows a heterogeneous panel of hours rather than
 # 8 shots taken at the same minute. This requires `faketime` (libfaketime).
-# The watch's RTC is synced from the host clock at install/launch time (the
-# same way a real watch syncs time from its paired phone), so `faketime`
-# wraps `pebble install`, not `pebble screenshot`. If `faketime` isn't
-# installed, the sweep still runs but every shot uses the emulator's actual
-# clock instead of the per-scenario TIMES.
+#
+# QEMU only reads the host clock (`-rtc base=localtime`) when it boots, not
+# on every `pebble install`. If the emulator is already running, reinstalling
+# the app does NOT re-sync its RTC — every scenario after the first would
+# silently inherit the first scenario's faked time instead of its own. So
+# this script kills the emulator before each install, forcing a fresh QEMU
+# boot under `faketime` for every scenario. If `faketime` isn't installed,
+# the sweep still runs but every shot uses the emulator's actual clock
+# instead of the per-scenario TIMES.
 #
 # Usage:
 #   ./scripts/screenshot-sweep.sh                 # emery, all 8 states
@@ -23,9 +26,10 @@ set -euo pipefail
 PLATFORM="${PLATFORM:-emery}"
 STATES="${STATES:-0 1 2 3 4 5 6 7}"
 OUT_DIR="${OUT_DIR:-screenshots/demo}"
+BOOT_WAIT="${BOOT_WAIT:-8}"  # cold emulator boot is slower than a warm reinstall
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
-NAMES=(urgent_low low in_range high urgent_high stale dashboard zero_state)
+NAMES=(urgent_low low in_range high urgent_high stale post_meal zero_state)
 TIMES=("06:42" "09:15" "12:08" "14:53" "17:27" "20:36" "22:14" "00:05")
 
 if command -v faketime >/dev/null 2>&1; then
@@ -45,12 +49,13 @@ for i in $STATES; do
   echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
+  pebble kill >/dev/null 2>&1 || true
   if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
     faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"
   else
     pebble install --emulator "$PLATFORM"
   fi
-  sleep 3
+  sleep "$BOOT_WAIT"
   out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
   pebble screenshot --emulator "$PLATFORM" "$out"
   echo "  Saved: $out"
