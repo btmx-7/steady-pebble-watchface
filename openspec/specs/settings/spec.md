@@ -19,3 +19,19 @@ The settings page MUST expose a Graph Window selector so the user can choose how
 - **THEN** `settings.graphWindow` is "25"
 - **AND** the next Nightscout fetch requests `count=25`
 
+### Requirement: Threshold Alert Vibration
+
+The settings page MUST let the user turn glucose threshold vibration alerts on or off, and choose which vibration pattern is used when an alert fires.
+
+#### Scenario: User disables threshold alerts
+
+- **WHEN** the user opens settings
+- **THEN** a "Threshold Alerts" toggle is shown, defaulting to on
+- **AND** turning it off and saving means the watch no longer vibrates when glucose crosses a low/high or urgent low/high threshold
+
+#### Scenario: User picks a vibration type
+
+- **WHEN** "Threshold Alerts" is on
+- **THEN** a "Vibration Type" select is shown with options: Standard, Short, Long, Double
+- **AND** the saved choice determines the haptic pattern used for both warning (low/high) and urgent (urgent low/high) alerts, with urgent alerts always using a stronger variant of the chosen pattern
+

@@ -289,6 +289,26 @@
 <div class="section">
   <div class="section-title">Alert Thresholds</div>
   <div class="card">
+    <div class="field">
+      <div class="field-label">Threshold Alerts
+        <span class="field-hint">Vibrate when glucose leaves range</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="alertsEnabled">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="field field-full" id="vibePattern-field">
+      <div class="field-label">Vibration Type
+        <span class="field-hint">Haptic pattern used for alerts</span>
+      </div>
+      <select id="vibePattern">
+        <option value="0">Standard</option>
+        <option value="1">Short</option>
+        <option value="2">Long</option>
+        <option value="3">Double</option>
+      </select>
+    </div>
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Low
@@ -306,13 +326,13 @@
     <div class="threshold-row">
       <div class="field field-full">
         <div class="field-label">Urgent Low
-          <span class="field-hint">Flash + 3× haptic</span>
+          <span class="field-hint">Stronger haptic pattern</span>
         </div>
         <input type="number" id="urgentLow" value="55" min="40" max="80">
       </div>
       <div class="field field-full">
         <div class="field-label">Urgent High
-          <span class="field-hint">Flash + 3× haptic</span>
+          <span class="field-hint">Stronger haptic pattern</span>
         </div>
         <input type="number" id="urgentHigh" value="250" min="200" max="400">
       </div>
@@ -341,6 +361,8 @@
 
   // Display
   document.getElementById('useMmol').checked   = params.useMmol === '1';
+  document.getElementById('alertsEnabled').checked = params.alertsEnabled !== '0';
+  document.getElementById('vibePattern').value = params.vibePattern  || '0';
   document.getElementById('lowThresh').value   = params.lowThresh   || '70';
   document.getElementById('highThresh').value  = params.highThresh  || '180';
   document.getElementById('urgentLow').value   = params.urgentLow   || '55';
@@ -357,6 +379,13 @@
   });
   document.getElementById('dataSource').dispatchEvent(new Event('change'));
 
+  // Vibration type only matters when alerts are enabled
+  document.getElementById('alertsEnabled').addEventListener('change', function() {
+    document.getElementById('vibePattern-field').style.display =
+      this.checked ? 'flex' : 'none';
+  });
+  document.getElementById('alertsEnabled').dispatchEvent(new Event('change'));
+
   function save() {
     var data = {
       layout:      '0',  // V1 ships Simple layout only
@@ -370,6 +399,8 @@
       dexcomPass:  document.getElementById('dexcomPass').value,
       dataSource:  document.getElementById('dataSource').value,
       useMmol:     document.getElementById('useMmol').checked ? '1' : '0',
+      alertsEnabled: document.getElementById('alertsEnabled').checked ? '1' : '0',
+      vibePattern: document.getElementById('vibePattern').value,
       lowThresh:   document.getElementById('lowThresh').value,
       highThresh:  document.getElementById('highThresh').value,
       urgentLow:   document.getElementById('urgentLow').value,

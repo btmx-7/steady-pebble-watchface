@@ -43,7 +43,9 @@
       "KEY_WEATHER_TMAX":   18,
       "KEY_MOCK_HR":        19,
       "KEY_MOCK_STEPS":     20,
-      "KEY_DEBUG_INFO":     21
+      "KEY_DEBUG_INFO":     21,
+      "KEY_ALERTS_ENABLED": 22,
+      "KEY_VIBE_PATTERN":   23
     },
     "resources": {
       "media": [
