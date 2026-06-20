@@ -110,6 +110,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 0;
     }
+    .threshold-row + .threshold-row { border-top: 1px solid #2a2a2a; }
     .threshold-row .field { border-right: 1px solid #2a2a2a; }
     .threshold-row .field:last-child { border-right: none; }
     .slot-grid {
@@ -226,39 +227,31 @@
         <option value="dexcom">Dexcom Share</option>
       </select>
     </div>
-  </div>
-</div>
-
-<div class="section" id="nightscout-section">
-  <div class="section-title">Nightscout</div>
-  <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Nightscout URL
-        <span class="field-hint">e.g. https://mysite.ns.io</span>
+    <div id="nightscout-section">
+      <div class="field field-full">
+        <div class="field-label">Nightscout URL
+          <span class="field-hint">e.g. https://mysite.ns.io</span>
+        </div>
+        <input type="text" id="nsUrl" placeholder="https://yoursite.nightscout.io">
       </div>
-      <input type="text" id="nsUrl" placeholder="https://yoursite.nightscout.io">
-    </div>
-    <div class="field field-full">
-      <div class="field-label">API Token (optional)
-        <span class="field-hint">Your Nightscout access token</span>
+      <div class="field field-full">
+        <div class="field-label">API Token (optional)
+          <span class="field-hint">Your Nightscout access token</span>
+        </div>
+        <input type="password" id="nsToken" placeholder="yourtoken-abc123">
       </div>
-      <input type="password" id="nsToken" placeholder="yourtoken-abc123">
     </div>
-  </div>
-</div>
-
-<div class="section" id="dexcom-section" style="display:none">
-  <div class="section-title">Dexcom Share</div>
-  <div class="card">
-    <div class="field field-full">
-      <div class="field-label">Dexcom Username
-        <span class="field-hint">Your Dexcom account email</span>
+    <div id="dexcom-section" style="display:none">
+      <div class="field field-full">
+        <div class="field-label">Dexcom Username
+          <span class="field-hint">Your Dexcom account email</span>
+        </div>
+        <input type="text" id="dexcomUser" placeholder="you@example.com">
       </div>
-      <input type="text" id="dexcomUser" placeholder="you@example.com">
-    </div>
-    <div class="field field-full">
-      <div class="field-label">Dexcom Password</div>
-      <input type="password" id="dexcomPass" placeholder="••••••••">
+      <div class="field field-full">
+        <div class="field-label">Dexcom Password</div>
+        <input type="password" id="dexcomPass" placeholder="••••••••">
+      </div>
     </div>
   </div>
 </div>
