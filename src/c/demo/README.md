@@ -12,6 +12,14 @@ include any of this code.
 | `demo.c` | Scenario table |
 | `../main.c` (`#ifdef DEMO_DATA`) | `apply_demo_state()`, button cycler |
 
+Under `DEMO_DATA`, `main.c` also skips restoring persisted settings and
+skips subscribing to the real `HealthService` — both would otherwise
+clobber the scenario's fixture values (a stale `Dashboard` layout left over
+from earlier non-demo testing, or a real step/HR reading of 0 from the
+emulator's empty health data) right after `apply_demo_state()` sets them.
+A demo build is fully determined by `demo.c` alone; you do not need to
+`pebble wipe` before a sweep.
+
 ## Scenario table
 
 8 scenarios cover the glucose/data states *and* exercise slot layout, color
@@ -40,9 +48,9 @@ Notes:
 - Steps appears in 6 of the 8 scenarios (it was previously unused by any
   scenario).
 - All 8 `ColorThemeId` values are used exactly once, split 4 dark / 4 light.
-- `Time` is the wall-clock time the screenshot sweep pins via
-  `pebble emu-set-time` (see `scripts/screenshot-sweep.sh`); spread across
-  the day for a heterogeneous panel of hours.
+- `Time` is the wall-clock time the screenshot sweep pins via `faketime`
+  (see `scripts/screenshot-sweep.sh`); spread across the day for a
+  heterogeneous panel of hours.
 
 ## Usage
 

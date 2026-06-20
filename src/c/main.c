@@ -1124,6 +1124,7 @@ static void prv_send_health_debug(const char *tag, int hr, int mask, int avail, 
   app_message_outbox_send();
 }
 
+#ifndef DEMO_DATA
 static void prv_health_handler(HealthEventType event, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Steady: health event %d", (int)event);
   if (event == HealthEventHeartRateUpdate || event == HealthEventSignificantUpdate) {
@@ -1146,6 +1147,7 @@ static void prv_health_handler(HealthEventType event, void *context) {
   prv_send_health_debug("event", s_heart_rate, mask, (int)s_steps_available, (int)s_step_count);
   update_display();
 }
+#endif /* DEMO_DATA */
 
 // ─── Bluetooth Callback ──────────────────────────────────────────────────────
 
@@ -1604,10 +1606,15 @@ static void main_window_load(Window *window) {
   };
   unobstructed_area_service_subscribe(ua, NULL);
 
+#ifndef DEMO_DATA
   // ── Subscribe to Health ──
   // Subscribing only delivers future events; without an initial peek the
   // Steps/HR slots stay at their zero default until the next significant
   // update fires (which can be minutes away).
+  //
+  // Skipped entirely under DEMO_DATA: the emulator's HealthService has no
+  // real step/HR data, so subscribing here would immediately overwrite the
+  // scenario's mock step_count/heart_rate (set by apply_demo_state) with 0.
   health_service_events_subscribe(prv_health_handler, NULL);
   HealthValue init_hr = health_service_peek_current_value(HealthMetricHeartRateBPM);
   if (init_hr > 0) s_heart_rate = (int)init_hr;
@@ -1622,6 +1629,7 @@ static void main_window_load(Window *window) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Steady: init_steps=%d", (int)init_steps);
   }
   s_init_steps_mask = (int)steps_mask;
+#endif /* DEMO_DATA */
 
   // Apply initial layout
   GRect avail = layer_get_unobstructed_bounds(s_window_layer);
@@ -1693,6 +1701,7 @@ static void apply_demo_state(int n) {
   s_weather_icon  = d->weather_icon;
   s_heart_rate    = d->heart_rate;
   s_step_count    = d->step_count;
+  s_steps_available = true;  // health subscription is skipped under DEMO_DATA; fixture is ground truth
 
   s_settings.layout   = (WatchLayout)d->layout;
   s_settings.slots[0] = (SlotType)d->slots[0];
@@ -1740,7 +1749,10 @@ static void demo_down_click(ClickRecognizerRef r, void *c) {
 // ─── Init / Deinit ───────────────────────────────────────────────────────────
 
 static void init(void) {
-  // Restore persisted state
+#ifndef DEMO_DATA
+  // Restore persisted state. Skipped under DEMO_DATA so a demo build is
+  // fully determined by demo.c — immune to whatever a real (non-demo)
+  // session previously wrote to this watch/emulator's flash storage.
   if (persist_exists(PERSIST_GLUCOSE))     s_glucose               = persist_read_int(PERSIST_GLUCOSE);
   if (persist_exists(PERSIST_TREND))       s_trend                 = persist_read_int(PERSIST_TREND);
   if (persist_exists(PERSIST_DELTA))       s_delta                 = persist_read_int(PERSIST_DELTA);
@@ -1766,10 +1778,9 @@ static void init(void) {
   if (persist_exists(PERSIST_WEATHER_MAX)) s_weather_tmax          = (int8_t)persist_read_int(PERSIST_WEATHER_MAX);
   if (persist_exists(PERSIST_COLOR_THEME)) s_settings.color_theme  = (ColorThemeId)persist_read_int(PERSIST_COLOR_THEME);
   if (persist_exists(PERSIST_DARK_MODE))   s_settings.dark_mode    = persist_read_int(PERSIST_DARK_MODE) != 0;
-
-#ifdef DEMO_DATA
+#else
   apply_demo_state(DEMO_STATE);
-#endif
+#endif /* DEMO_DATA */
 
   apply_theme();
 

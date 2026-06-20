@@ -5,13 +5,23 @@
 #
 # Each scenario pins a different wall-clock time (see TIMES below) so the
 # resulting screenshot set shows a heterogeneous panel of hours rather than
-# 8 shots taken at the same minute. This used to rely on `faketime` wrapped
-# around `pebble install`, but QEMU only reads the host clock at boot
-# (`-rtc base=localtime`), not on every reinstall — so it required killing
-# and rebooting the emulator before every single scenario, which was both
-# slow and prone to install races. `pebble emu-set-time` instead pushes the
-# time directly to the already-running emulator over its live connection, so
-# the emulator only needs to boot once for the whole sweep.
+# 8 shots taken at the same minute. This requires `faketime` (libfaketime).
+#
+# `pebble emu-set-time` looks like the right tool for this but does NOT
+# work on emery/gabbro: pebble-tool's own source (pebble_tool/commands/
+# screenshot.py) notes that "the QEMU 10 + pebble-emery board ignores
+# SetUTC/SetLocaltime: the watch face follows the host RTC" — i.e. the
+# firmware itself disregards any live time-set message and just continues
+# tracking the host's real wall clock. The only thing that actually works
+# is faking what the HOST clock reports, for the QEMU process's entire
+# lifetime. `pebble install` reads the host clock once at QEMU boot
+# (`-rtc base=localtime`) and the firmware free-runs off the host RTC after
+# that, so the fake clock has to be in place before that specific QEMU
+# process spawns — meaning a fresh boot (and `faketime`-wrapped install) is
+# needed for every scenario; reinstalling into an already-running emulator
+# would just inherit whatever time the first scenario booted under. If
+# `faketime` isn't installed, the sweep still runs but every shot uses the
+# emulator's actual clock instead of the per-scenario TIMES.
 #
 # Usage:
 #   ./scripts/screenshot-sweep.sh                 # emery, all 8 states
@@ -23,11 +33,18 @@ set -euo pipefail
 PLATFORM="${PLATFORM:-emery}"
 STATES="${STATES:-0 1 2 3 4 5 6 7}"
 OUT_DIR="${OUT_DIR:-screenshots/demo}"
-SETTLE_WAIT="${SETTLE_WAIT:-2}"  # let the watchface redraw after the time jump
+BOOT_WAIT="${BOOT_WAIT:-8}"  # cold emulator boot is slower than a warm reinstall
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
 NAMES=(urgent_low low in_range high urgent_high stale post_meal zero_state)
 TIMES=("06:42" "09:15" "12:08" "14:53" "17:27" "20:36" "22:14" "00:05")
+
+if command -v faketime >/dev/null 2>&1; then
+  HAVE_FAKETIME=1
+else
+  HAVE_FAKETIME=0
+  echo "Warning: faketime not found — screenshots will use the emulator's actual clock, not the per-scenario TIMES." >&2
+fi
 
 mkdir -p "$OUT_DIR"
 
@@ -39,11 +56,14 @@ for i in $STATES; do
   echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
-  pebble install --emulator "$PLATFORM"
-  if [[ -n "$time_str" ]]; then
-    pebble emu-set-time "$time_str:00" --emulator "$PLATFORM"
+  pebble kill >/dev/null 2>&1 || true
+  sleep 2  # let the old QEMU process/ports fully release before booting a new one
+  if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
+    faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"
+  else
+    pebble install --emulator "$PLATFORM"
   fi
-  sleep "$SETTLE_WAIT"
+  sleep "$BOOT_WAIT"
   out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
   pebble screenshot --emulator "$PLATFORM" "$out"
   echo "  Saved: $out"
