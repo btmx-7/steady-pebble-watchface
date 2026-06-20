@@ -40,9 +40,9 @@ Notes:
 - Steps appears in 6 of the 8 scenarios (it was previously unused by any
   scenario).
 - All 8 `ColorThemeId` values are used exactly once, split 4 dark / 4 light.
-- `Time` is the wall-clock time the screenshot sweep pins via `faketime`
-  (see `scripts/screenshot-sweep.sh`); spread across the day for a
-  heterogeneous panel of hours.
+- `Time` is the wall-clock time the screenshot sweep pins via
+  `pebble emu-set-time` (see `scripts/screenshot-sweep.sh`); spread across
+  the day for a heterogeneous panel of hours.
 
 ## Usage
 
