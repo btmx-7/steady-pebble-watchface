@@ -20,7 +20,7 @@
     "description": "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 8 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in.",
     "capabilities": ["configurable", "health"],
     "enableMultiJS": true,
-    "longDescription": "Steady is a clean watchface that shows what matters. Large clock and 4 configurable widget slots.\n\nEach slot shows one data source:\n- Battery\n- Weather\n- Heart rate\n- Steps\n- Glucose\n\nThe CGM widget keeps glucose visible. It sits alongside your other data. It does not take over the design. This works for people living with diabetes who want a watchface that looks like a watchface, not a medical device.\n\nChoose from 8 color themes, with light, dark, or automatic (sunrise/sunset) mode. Configure a vibration type per glucose alert threshold (low, high, urgent low, urgent high).\n\nSupports Nightscout and Dexcom Share. Runs on Pebble Time 2 (Emery) and Pebble Round 2 (Gabbro).",
+    "longDescription": "Steady is a clean watchface that shows what matters. Large clock and 4 configurable widget slots.\n\nEach slot shows one data source:\n- Battery\n- Weather\n- Heart rate\n- Steps\n- Glucose\n\nThe CGM widget keeps glucose visible. It sits alongside your other data. It does not take over the design. This works for people living with diabetes who want a watchface that looks like a watchface, not a medical device.\n\nChoose from 8 color themes, with light, dark, or automatic (sunrise/sunset) mode. Configure a vibration type per glucose alert threshold (low, high, urgent low, urgent high).\n\nSupports Nightscout and Dexcom Share. Runs on Pebble Time 2 (Emery) and Pebble Round 2 (Gabbro). Support for Pebble Time, Pebble 2, and Pebble Time Round is coming soon.",
     "messageKeys": {
       "KEY_GLUCOSE_VALUE":  0,
       "KEY_GLUCOSE_TREND":  1,
@@ -102,7 +102,7 @@
       "watchface": true,
       "hiddenApp": false
     },
-    "targetPlatforms": ["emery", "gabbro", "basalt", "diorite", "chalk"]
+    "targetPlatforms": ["emery", "gabbro"]
   },
   "dependencies": {}
 }
