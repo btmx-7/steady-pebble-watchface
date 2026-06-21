@@ -12,6 +12,14 @@ include any of this code.
 | `demo.c` | Scenario table |
 | `../main.c` (`#ifdef DEMO_DATA`) | `apply_demo_state()`, button cycler |
 
+Under `DEMO_DATA`, `main.c` also skips restoring persisted settings and
+skips subscribing to the real `HealthService` — both would otherwise
+clobber the scenario's fixture values (a stale `Dashboard` layout left over
+from earlier non-demo testing, or a real step/HR reading of 0 from the
+emulator's empty health data) right after `apply_demo_state()` sets them.
+A demo build is fully determined by `demo.c` alone; you do not need to
+`pebble wipe` before a sweep.
+
 ## Scenario table
 
 8 scenarios cover the glucose/data states *and* exercise slot layout, color
@@ -26,11 +34,8 @@ produces a visually diverse contact sheet rather than 8 near-identical shots.
 | 3 | `high`        | 195     | Single Up   | Simple    | Weather, Heart Rate, Steps, Battery | No     | Green  | Light | 14:53 |
 | 4 | `urgent_high` | 270     | Double Up   | Simple    | Steps, Battery, CGM, Weather     | Yes       | Cyan   | Dark  | 17:27 |
 | 5 | `stale`       | 120     | None        | Simple    | Heart Rate, CGM, Battery, Weather | Yes      | Blue   | Light | 20:36 |
-| 6 | `dashboard`   | 142     | Flat        | Dashboard | Weather, Battery, Steps, (unused) | No*      | Purple | Dark  | 22:14 |
+| 6 | `post_meal`   | 110     | 45° Down    | Simple    | Heart Rate, Battery, Weather, Steps | No     | Purple | Dark  | 22:14 |
 | 7 | `zero_state`  | 0       | None        | Simple    | None, None, None, None          | No        | Pink   | Light | 00:05 |
-
-\* `dashboard` has a dedicated CGM panel outside the slot grid, always shown
-for that layout regardless of slot config.
 
 Notes:
 - Only **3 of 8** scenarios (`urgent_low`, `urgent_high`, `stale`) put CGM in

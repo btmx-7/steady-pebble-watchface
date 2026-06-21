@@ -34,7 +34,7 @@ const DemoScenario demo_scenarios[DEMO_SCENARIO_COUNT] = {
   { "high",         195, 1,     10,   120,  22, 16,  28,  0,  95,  8500,  0,     {2,3,4,1},    1,    3,    0 },  // 14:53 green/light — no CGM slot
   { "urgent_high",  270, 0,     18,   60,   22, 16,  28,  0,  110, 12034, 0,     {4,1,5,2},    1,    4,    1 },  // 17:27 cyan/dark — CGM widget shown
   { "stale",        120, 7,     0,    1800, 10, 4,   15,  0,  0,   0,     0,     {3,5,1,2},    3,    5,    0 },  // 20:36 blue/light — CGM widget shown
-  { "dashboard",    142, 3,     3,    180,  12, 6,   18,  0,  78,  6842,  1,     {2,1,4,0},    0,    6,    1 },  // 22:14 purple/dark
+  { "post_meal",    110, 4,    -12,   240,  15, 9,   17,  4,  98,  5310,  0,     {3,1,2,4},    4,    6,    1 },  // 22:14 purple/dark — no CGM slot
   { "zero_state",   0,   7,     0,    0,    -128,-128,-128,7, 0,   0,     0,     {0,0,0,0},    3,    7,    0 },  // 00:05 pink/light
 };
 
