@@ -49,6 +49,17 @@ fi
 
 mkdir -p "$OUT_DIR"
 
+# Start from a known-good emulator state. `pebble kill` only stops the QEMU
+# process — it does NOT reset the persisted flash image
+# (qemu_spi_flash.bin), so a prior run that left that image corrupted (e.g.
+# a `kill -9` mid-write) will make every subsequent boot hang on the splash
+# screen forever, no matter how many times install_app retries. `pebble
+# wipe` resets that persisted state. Doing this once up front means the
+# sweep always starts clean instead of inheriting whatever state the last
+# run (or a crashed previous attempt) left behind.
+pebble kill >/dev/null 2>&1 || true
+pebble wipe >/dev/null 2>&1 || true
+
 # Install the freshly-built app for scenario $i (uses $time_str from the loop).
 #
 # emery/gabbro can take longer to cold-boot than pebble-tool's install
@@ -65,6 +76,15 @@ install_app() {
       # faketime only affects a process it spawns, so QEMU has to be (re)booted
       # under it for the fake clock to stick — kill + cold boot per attempt.
       pebble kill >/dev/null 2>&1 || true
+      if ((t > 1)); then
+        # A timed-out attempt may have left QEMU mid-boot or mid-flash-write.
+        # Plain `kill` doesn't reset the persisted flash image, so retrying
+        # without a wipe just reboots into the same wedged state and fails
+        # identically every time. Wipe before every retry (not the first
+        # attempt — that already runs against the sweep's clean starting
+        # state) so a bad boot can actually recover instead of looping.
+        pebble wipe >/dev/null 2>&1 || true
+      fi
       sleep 2  # let the old QEMU process/ports fully release before rebooting
       if faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"; then
         sleep "$BOOT_WAIT"  # let the freshly-booted face settle before the shot
@@ -73,6 +93,9 @@ install_app() {
     else
       # No faketime: nothing to pin, so reinstall into the running emulator. The
       # first attempt cold-boots it (and may time out); retries land warm.
+      if ((t > 1)); then
+        pebble wipe >/dev/null 2>&1 || true
+      fi
       if pebble install --emulator "$PLATFORM"; then
         return 0
       fi
