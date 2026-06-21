@@ -56,14 +56,21 @@ for i in $STATES; do
   echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
-  pebble kill >/dev/null 2>&1 || true
-  sleep 2  # let the old QEMU process/ports fully release before booting a new one
   if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
+    # faketime only affects a process it spawns, so QEMU has to be (re)booted
+    # under it for the fake clock to stick — hence kill + cold boot per scenario.
+    pebble kill >/dev/null 2>&1 || true
+    sleep 2  # let the old QEMU process/ports fully release before booting a new one
     faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"
+    sleep "$BOOT_WAIT"
   else
+    # No faketime: nothing to pin, so skip the kill + cold boot. A warm reinstall
+    # into the already-running emulator is much faster and avoids the cold-boot
+    # "Timed out waiting for install confirmation" emery is prone to. Every shot
+    # uses the emulator's current wall-clock time. (The first reinstall cold-boots
+    # the emulator once if none is running.)
     pebble install --emulator "$PLATFORM"
   fi
-  sleep "$BOOT_WAIT"
   out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
   pebble screenshot --emulator "$PLATFORM" "$out"
   echo "  Saved: $out"
