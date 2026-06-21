@@ -42,7 +42,7 @@ INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pe
 PIN_TIMES="${PIN_TIMES:-1}"  # 1 = cold-boot each scenario under faketime so it shows its own clock
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
-NAMES=(in_range urgent_low high urgent_high stale)
+NAMES=(in_range urgent_low high_alerts no_data stale)
 TIMES=("00:07" "09:21" "20:34" "16:59" "11:38")
 
 HAVE_FAKETIME=0

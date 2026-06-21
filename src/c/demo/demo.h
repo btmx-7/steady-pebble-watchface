@@ -21,6 +21,8 @@ typedef struct {
   uint8_t   weather_icon;          // 0..7
   int       heart_rate;            // BPM (0 = none)
   uint32_t  step_count;
+  uint8_t   battery_pct;           // 0..100 (drives the battery slot under DEMO_DATA)
+  uint8_t   battery_charging;      // 0=no, 1=charging (shows the charging bolt)
   uint8_t   layout;                // WatchLayout
   uint8_t   slots[4];              // SlotType per slot A-D
   uint8_t   graph_pattern;         // 0=wave, 1=rising, 2=falling, 3=flat-low, 4=spike

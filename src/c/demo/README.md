@@ -22,32 +22,37 @@ A demo build is fully determined by `demo.c` alone; you do not need to
 
 ## Scenario table
 
-5 scenarios condense the glucose/data states *and* exercise slot layout, color
-theme, light/dark mode, and time-of-day combinations so a single sweep
-produces a visually diverse contact sheet rather than near-identical shots.
+5 scenarios exercise slot layout, color theme, light/dark mode, time-of-day,
+and — crucially — a spread of nominal *and* edge/alert data states, so a
+single sweep produces a visually diverse contact sheet rather than
+near-identical shots.
 
-| # | Name          | Glucose | Trend       | Layout    | Slots (A,B,C,D)                     | CGM slot? | Theme  | Mode  | Time  |
-|---|---------------|---------|-------------|-----------|--------------------------------------|-----------|--------|-------|-------|
-| 0 | `in_range`    | 120     | Flat        | Simple    | CGM, Battery, Weather, Steps         | Yes       | Cyan   | Dark  | 00:07 |
-| 1 | `urgent_low`  | 45      | Double Down | Simple    | Steps, Heart Rate, CGM, Weather      | Yes       | Green  | Light | 09:21 |
-| 2 | `high`        | 195     | Single Up   | Simple    | Weather, Steps, Battery, Heart Rate  | No        | Yellow | Dark  | 20:34 |
-| 3 | `urgent_high` | 270     | Double Up   | Simple    | Heart Rate, CGM, Battery, Weather    | Yes       | Red    | Light | 16:59 |
-| 4 | `stale`       | 120     | None        | Simple    | Battery, CGM, Heart Rate, Steps      | Yes       | Purple | Dark  | 11:38 |
+| # | Name          | Glucose | Slots (A,B,C,D)                     | CGM slot? | Theme  | Mode  | Time  | Demonstrates |
+|---|---------------|---------|--------------------------------------|-----------|--------|-------|-------|--------------|
+| 0 | `in_range`    | 120     | CGM, Battery, Weather, Steps         | Yes       | Cyan   | Dark  | 00:07 | **Nominal** — every slot healthy/mid-range |
+| 1 | `urgent_low`  | 45      | Steps, Heart Rate, CGM, Battery      | Yes       | Green  | Light | 09:21 | CGM danger zone + **battery charging** |
+| 2 | `high_alerts` | 195     | Weather, Steps, Battery, Heart Rate  | No        | Yellow | Dark  | 20:34 | Weather at **max**, battery **low**, HR **high** |
+| 3 | `no_data`     | 0       | Heart Rate, Battery, Steps, Weather  | No        | Red    | Light | 16:59 | HR & weather **"--"**, steps 0, battery **full** |
+| 4 | `stale`       | 120     | Battery, CGM, Heart Rate, Steps      | Yes       | Purple | Dark  | 11:38 | CGM **stale** (gray) + battery mid |
 
 Notes:
 - The set is held at **5** scenarios on purpose: the sweep cold-boots the
   emulator once per scenario to pin its clock, and ~5 cold boots is the
   reliable ceiling — longer 8-state sweeps wedged QEMU on the 6th boot
-  (splash-screen loop). 5 condenses the glucose-zone coverage (`in_range`,
-  `urgent_low`, `high`, `urgent_high`, `stale`) into that budget.
-- **4 of 5** scenarios put CGM in a slot, covering all of the widget's
-  distinctive styling (zone color across in-range/low/high, plus the
-  gray/stale treatment). `high` is the lone no-CGM scenario, QA'ing the
-  rest of the layout (Battery/Weather/Heart Rate/Steps) on its own.
-- All **five** slot data types (Battery, Weather, Heart Rate, Steps, CGM)
-  are spread across all four positions A–D — e.g. CGM lands in A
-  (`in_range`), C (`urgent_low`), and B (`urgent_high`, `stale`); Heart Rate
-  hits all four positions across the set.
+  (splash-screen loop).
+- Exactly **one** scenario (`in_range`) is fully nominal; the other four each
+  mix edge/alert states (battery charging / low / full, weather max,
+  unavailable `--` readings, HR over threshold, steps 0, CGM stale).
+- **3 of 5** put CGM in a slot (`in_range`, `urgent_low`, `stale`), covering
+  the widget's normal, danger-zone, and gray/stale stylings. The other two
+  (`high_alerts`, `no_data`) configure the watchface without the CGM widget,
+  QA'ing the rest of the layout on its own.
+- All **five** slot data types (Battery, Weather, Heart Rate, Steps, CGM) are
+  spread across all four positions A–D — Heart Rate and Steps each hit all
+  four; CGM lands in A (`in_range`), C (`urgent_low`), B (`stale`).
+- The battery slot is driven by `battery_pct` / `battery_charging` in the
+  scenario (under `DEMO_DATA` the live battery service is bypassed), so the
+  charging / low / full states are deterministic in screenshots.
 - Themes used: Cyan, Green, Yellow, Red, Purple — 3 dark / 2 light.
 - `Time` is the wall-clock time the screenshot sweep pins via `faketime`
   (see `scripts/screenshot-sweep.sh`); spread across the day for a
@@ -68,7 +73,7 @@ The current state name is logged to the `--logs` stream.
 ### Pin one state at compile time
 
 ```bash
-DEMO_DATA=1 DEMO_STATE=3 pebble build   # urgent_high
+DEMO_DATA=1 DEMO_STATE=1 pebble build   # urgent_low
 pebble install --emulator emery
 ```
 

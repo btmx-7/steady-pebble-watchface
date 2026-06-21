@@ -272,6 +272,14 @@ static int     s_heart_rate    = 0;
 static uint32_t s_step_count   = 0;
 static bool    s_steps_available = false;  // 0 steps is a valid reading; this disambiguates "no data"
 
+#ifdef DEMO_DATA
+// Battery is normally read live from battery_state_service_peek(); under
+// DEMO_DATA the scenario drives it instead so we can show charging / low /
+// full states deterministically in QA screenshots.
+static uint8_t s_demo_battery_pct      = 50;
+static bool    s_demo_battery_charging = false;
+#endif
+
 // Alert state
 static AppTimer *s_alert_timer    = NULL;
 
@@ -478,7 +486,13 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
 
   switch (type) {
     case SLOT_BATTERY: {
+#ifdef DEMO_DATA
+      BatteryChargeState bat = { .charge_percent = s_demo_battery_pct,
+                                 .is_charging    = s_demo_battery_charging,
+                                 .is_plugged     = s_demo_battery_charging };
+#else
       BatteryChargeState bat = battery_state_service_peek();
+#endif
       int pct = bat.charge_percent;
       d->value_normalized = pct;
       snprintf(d->value_str, sizeof(d->value_str), "%d", pct);
@@ -1702,6 +1716,8 @@ static void apply_demo_state(int n) {
   s_heart_rate    = d->heart_rate;
   s_step_count    = d->step_count;
   s_steps_available = true;  // health subscription is skipped under DEMO_DATA; fixture is ground truth
+  s_demo_battery_pct      = d->battery_pct;
+  s_demo_battery_charging = d->battery_charging != 0;
 
   s_settings.layout   = (WatchLayout)d->layout;
   s_settings.slots[0] = (SlotType)d->slots[0];
