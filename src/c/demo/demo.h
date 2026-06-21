@@ -28,11 +28,11 @@ typedef struct {
   uint8_t   dark_mode;             // 0=light, 1=dark
 } DemoScenario;
 
-#define DEMO_SCENARIO_COUNT 8
+#define DEMO_SCENARIO_COUNT 5
 
 /* Default state if DEMO_STATE is not overridden at compile time. */
 #ifndef DEMO_STATE
-#define DEMO_STATE 2
+#define DEMO_STATE 0
 #endif
 
 extern const DemoScenario demo_scenarios[DEMO_SCENARIO_COUNT];

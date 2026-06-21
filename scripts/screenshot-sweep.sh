@@ -3,48 +3,47 @@
 #
 # Build + install + screenshot one PBW per demo scenario.
 #
-# Default behaviour: boot the emulator ONCE, then reinstall each scenario into
-# that already-running emulator and grab a screenshot. This warm-reinstall path
-# is the one that actually works on emery/gabbro (QEMU 10): a warm reinstall is
-# fast and pebble-tool gets its install confirmation well within the timeout. A
-# *cold* boot, by contrast, is slower than pebble-tool's install-confirmation
-# timeout, so booting fresh for every scenario reliably fails with "Timed out
-# waiting for install confirmation."
+# Default behaviour (PIN_TIMES=1): each scenario pins its own wall-clock time
+# (see TIMES below) so the panel shows a heterogeneous set of hours. That needs
+# a fresh cold boot per scenario under faketime, because `pebble emu-set-time`
+# does NOT work here — pebble-tool's own source notes the QEMU 10 + pebble-emery
+# board ignores SetUTC/SetLocaltime and the watchface just follows the host RTC.
+# The only lever is faking the HOST clock for the QEMU process's whole lifetime
+# via `faketime`. That cold boot is slower than pebble-tool's install timeout,
+# so the faketime'd `pebble install` usually reports a timeout — which is fine
+# and expected: the QEMU it spawned keeps running with the faked clock latched
+# into its RTC, so we ignore that timeout and then do a normal WARM reinstall
+# into the now-booted emulator (which lands quickly and shows the right hour).
 #
-# TIME PINNING (opt-in, PIN_TIMES=1 — off by default):
-#   Each scenario can pin a different wall-clock time (see TIMES below) so the
-#   panel shows a heterogeneous set of hours. `pebble emu-set-time` looks like
-#   the right tool but does NOT work here: pebble-tool's own source notes the
-#   QEMU 10 + pebble-emery board ignores SetUTC/SetLocaltime and the watchface
-#   just follows the host RTC. The only lever is faking the HOST clock for the
-#   QEMU process's whole lifetime via `faketime`, which means a fresh cold boot
-#   per scenario — and that cold boot is slower than pebble-tool's install
-#   timeout, so the faketime'd `pebble install` usually reports a timeout.
-#   That's fine and expected: the QEMU it spawned keeps running with the faked
-#   clock latched into its RTC, so we just ignore that timeout and then do a
-#   normal WARM reinstall into the now-booted emulator (which lands quickly and
-#   shows the right hour). Time pinning therefore costs one slow cold boot per
-#   scenario but does produce varied clocks. Still gated behind PIN_TIMES=1
-#   because it's slower and a bit more fragile than the single-clock default.
+# SINGLE-CLOCK MODE (PIN_TIMES=0): boot the emulator ONCE, then warm-reinstall
+# each scenario into that already-running emulator. Faster (one cold boot total
+# instead of one per scenario) but every shot shows the same clock. Use it when
+# you only care about the glucose/slot/theme content, not the displayed hour.
 #
 # Usage:
-#   ./scripts/screenshot-sweep.sh                  # emery, all 8 states (one clock)
+#   ./scripts/screenshot-sweep.sh                  # emery, all 5 states (timed)
 #   PLATFORM=gabbro ./scripts/screenshot-sweep.sh  # round
 #   STATES="0 3 4"  ./scripts/screenshot-sweep.sh  # subset
-#   PIN_TIMES=1 ./scripts/screenshot-sweep.sh      # opt into per-scenario clocks (flaky)
+#   PIN_TIMES=0 ./scripts/screenshot-sweep.sh      # one clock, faster (skip per-scenario times)
+#
+# There are 5 scenarios (down from 8): cold-booting emery once per scenario
+# under faketime is what produces the per-state clocks, and ~5 cold boots is
+# the reliable ceiling — earlier 8-state sweeps wedged QEMU on the 6th cold
+# boot (splash-screen loop) no matter how long we waited for it. Keeping the
+# set at 5 sidesteps that entirely.
 
 set -euo pipefail
 
 PLATFORM="${PLATFORM:-emery}"
-STATES="${STATES:-0 1 2 3 4 5 6 7}"
+STATES="${STATES:-0 1 2 3 4}"
 OUT_DIR="${OUT_DIR:-screenshots/demo}"
 BOOT_WAIT="${BOOT_WAIT:-20}"  # cold emulator boot is slower than a warm reinstall
 INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pebble-tool's install timeout
-PIN_TIMES="${PIN_TIMES:-0}"  # 1 = cold-boot each scenario under faketime to vary the clock (flaky)
+PIN_TIMES="${PIN_TIMES:-1}"  # 1 = cold-boot each scenario under faketime so it shows its own clock
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
-NAMES=(urgent_low low in_range high urgent_high stale post_meal zero_state)
-TIMES=("06:42" "09:15" "12:08" "14:53" "17:27" "20:36" "22:14" "00:05")
+NAMES=(in_range urgent_low high urgent_high stale)
+TIMES=("00:07" "09:21" "20:34" "16:59" "11:38")
 
 HAVE_FAKETIME=0
 if [[ "$PIN_TIMES" == "1" ]]; then
