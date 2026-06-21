@@ -38,7 +38,7 @@ set -euo pipefail
 PLATFORM="${PLATFORM:-emery}"
 STATES="${STATES:-0 1 2 3 4 5 6 7}"
 OUT_DIR="${OUT_DIR:-screenshots/demo}"
-BOOT_WAIT="${BOOT_WAIT:-8}"  # cold emulator boot is slower than a warm reinstall
+BOOT_WAIT="${BOOT_WAIT:-20}"  # cold emulator boot is slower than a warm reinstall
 INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pebble-tool's install timeout
 PIN_TIMES="${PIN_TIMES:-0}"  # 1 = cold-boot each scenario under faketime to vary the clock (flaky)
 
@@ -85,7 +85,12 @@ fi
 
 # Warm reinstall into the already-running emulator — the reliable path. No
 # kill/wipe: that would tear down the warm emulator we want to reuse and force
-# another slow cold boot. Returns non-zero only if every attempt fails, so the
+# another slow cold boot. Retry backoff grows (5s, 10s, 15s, …) instead of a
+# flat delay: when this follows a cold boot (PIN_TIMES=1), a still-booting
+# QEMU needs growing room to finish, not a fixed window that can run out
+# before a slower-than-usual boot (cold boot time isn't constant — it tends to
+# get slower deeper into a long sweep as the host accumulates load from prior
+# QEMU processes). Returns non-zero only if every attempt fails, so the
 # caller can skip the scenario instead of aborting the whole sweep.
 warm_install() {
   local t
@@ -95,7 +100,7 @@ warm_install() {
       return 0
     fi
     echo "  install attempt $t/$INSTALL_RETRIES failed; giving the emulator more time…" >&2
-    sleep 5
+    sleep $((t * 5))
   done
   return 1
 }
