@@ -34,6 +34,7 @@ PLATFORM="${PLATFORM:-emery}"
 STATES="${STATES:-0 1 2 3 4 5 6 7}"
 OUT_DIR="${OUT_DIR:-screenshots/demo}"
 BOOT_WAIT="${BOOT_WAIT:-8}"  # cold emulator boot is slower than a warm reinstall
+INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pebble-tool's install timeout
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
 NAMES=(urgent_low low in_range high urgent_high stale post_meal zero_state)
@@ -48,6 +49,40 @@ fi
 
 mkdir -p "$OUT_DIR"
 
+# Install the freshly-built app for scenario $i (uses $time_str from the loop).
+#
+# emery/gabbro can take longer to cold-boot than pebble-tool's install
+# confirmation timeout, so the first attempt against a not-yet-ready QEMU may
+# fail with "Timed out waiting for install confirmation" or a connection
+# TimeoutError. The QEMU it spawned keeps booting in the background, so a retry
+# a few seconds later lands in a warm, responsive emulator. Returns non-zero
+# only if every attempt fails (so the caller can skip the scenario instead of
+# aborting the whole sweep).
+install_app() {
+  local t
+  for ((t = 1; t <= INSTALL_RETRIES; t++)); do
+    if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
+      # faketime only affects a process it spawns, so QEMU has to be (re)booted
+      # under it for the fake clock to stick — kill + cold boot per attempt.
+      pebble kill >/dev/null 2>&1 || true
+      sleep 2  # let the old QEMU process/ports fully release before rebooting
+      if faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"; then
+        sleep "$BOOT_WAIT"  # let the freshly-booted face settle before the shot
+        return 0
+      fi
+    else
+      # No faketime: nothing to pin, so reinstall into the running emulator. The
+      # first attempt cold-boots it (and may time out); retries land warm.
+      if pebble install --emulator "$PLATFORM"; then
+        return 0
+      fi
+    fi
+    echo "  install attempt $t/$INSTALL_RETRIES failed; giving the emulator a few more seconds to boot…" >&2
+    sleep 5
+  done
+  return 1
+}
+
 for i in $STATES; do
   name="${NAMES[$i]:-state_$i}"
   time_str="${TIMES[$i]:-}"
@@ -56,24 +91,12 @@ for i in $STATES; do
   echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
-  if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
-    # faketime only affects a process it spawns, so QEMU has to be (re)booted
-    # under it for the fake clock to stick — hence kill + cold boot per scenario.
-    pebble kill >/dev/null 2>&1 || true
-    sleep 2  # let the old QEMU process/ports fully release before booting a new one
-    faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM"
-    sleep "$BOOT_WAIT"
-  else
-    # No faketime: nothing to pin, so skip the kill + cold boot. A warm reinstall
-    # into the already-running emulator is much faster and avoids the cold-boot
-    # "Timed out waiting for install confirmation" emery is prone to. Every shot
-    # uses the emulator's current wall-clock time. (The first reinstall cold-boots
-    # the emulator once if none is running.)
-    pebble install --emulator "$PLATFORM"
-  fi
   out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
-  pebble screenshot --emulator "$PLATFORM" "$out"
-  echo "  Saved: $out"
+  if install_app && pebble screenshot --emulator "$PLATFORM" "$out"; then
+    echo "  Saved: $out"
+  else
+    echo "  WARNING: state $i ($name) failed after $INSTALL_RETRIES attempts — skipping" >&2
+  fi
 done
 
 echo ""
