@@ -21,6 +21,8 @@ typedef struct {
   uint8_t   weather_icon;          // 0..7
   int       heart_rate;            // BPM (0 = none)
   uint32_t  step_count;
+  uint8_t   battery_pct;           // 0..100 (drives the battery slot under DEMO_DATA)
+  uint8_t   battery_charging;      // 0=no, 1=charging (shows the charging bolt)
   uint8_t   layout;                // WatchLayout
   uint8_t   slots[4];              // SlotType per slot A-D
   uint8_t   graph_pattern;         // 0=wave, 1=rising, 2=falling, 3=flat-low, 4=spike
@@ -28,11 +30,11 @@ typedef struct {
   uint8_t   dark_mode;             // 0=light, 1=dark
 } DemoScenario;
 
-#define DEMO_SCENARIO_COUNT 8
+#define DEMO_SCENARIO_COUNT 5
 
 /* Default state if DEMO_STATE is not overridden at compile time. */
 #ifndef DEMO_STATE
-#define DEMO_STATE 2
+#define DEMO_STATE 0
 #endif
 
 extern const DemoScenario demo_scenarios[DEMO_SCENARIO_COUNT];
