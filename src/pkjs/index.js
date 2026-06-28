@@ -62,7 +62,7 @@ function loadSettings() {
     'nsUrl', 'nsToken', 'dexcomUser', 'dexcomPass', 'useMmol',
     'highThresh', 'lowThresh', 'urgentHigh', 'urgentLow',
     'alertsEnabled', 'vibeLow', 'vibeHigh', 'vibeUrgentLow', 'vibeUrgentHigh',
-    'dataSource', 'graphWindow',
+    'dataSource', 'graphWindow', 'refreshInterval',
     'layout', 'slot0', 'slot1', 'slot2', 'slot3',
     'colorTheme', 'darkMode'
   ];
@@ -83,6 +83,7 @@ function loadSettings() {
   if (!settings.vibeUrgentHigh) settings.vibeUrgentHigh = '3';  // VIBE_TYPE_DOUBLE_PULSE
   if (!settings.dataSource)  settings.dataSource  = 'nightscout';
   if (!settings.graphWindow) settings.graphWindow = '37';
+  if (!settings.refreshInterval) settings.refreshInterval = '5';  // minutes
   if (!settings.layout)      settings.layout      = '0';  // LAYOUT_SIMPLE
   if (!settings.slot0)       settings.slot0       = '2';  // SLOT_WEATHER
   if (!settings.slot1)       settings.slot1       = '1';  // SLOT_BATTERY
@@ -485,6 +486,20 @@ function fetchData() {
   else fetchNightscout();
 }
 
+// Polling timer for CGM fetches. The interval is user-configurable (e.g. every
+// minute to line up with Juggluco's Nightscout updates), so it lives in a
+// reschedulable helper rather than a one-shot setInterval — calling this again
+// after settings change swaps in the new cadence without restarting pkjs.
+var s_fetchTimer = null;
+
+function scheduleFetch() {
+  if (s_fetchTimer) clearInterval(s_fetchTimer);
+  var mins = parseInt(settings.refreshInterval) || 5;
+  if (mins < 1) mins = 1;
+  s_fetchTimer = setInterval(fetchData, mins * 60 * 1000);
+  console.log('Steady: CGM refresh scheduled every ' + mins + ' min');
+}
+
 // ─── Pebble Event Handlers ───────────────────────────────────────────────────
 
 Pebble.addEventListener('ready', function() {
@@ -492,7 +507,7 @@ Pebble.addEventListener('ready', function() {
   loadSettings();
   fetchData();
   fetchWeather();
-  setInterval(fetchData,    5  * 60 * 1000);  // CGM every 5 min
+  scheduleFetch();                            // CGM at user-configured interval
   setInterval(fetchWeather, 30 * 60 * 1000);  // weather every 30 min
 });
 
@@ -535,6 +550,7 @@ Pebble.addEventListener('showConfiguration', function() {
     '&vibeUrgentLow=' + encodeURIComponent(settings.vibeUrgentLow || '3') +
     '&vibeUrgentHigh=' + encodeURIComponent(settings.vibeUrgentHigh || '3') +
     '&graphWindow=' + encodeURIComponent(settings.graphWindow || '37') +
+    '&refreshInterval=' + encodeURIComponent(settings.refreshInterval || '5') +
     '&layout='      + encodeURIComponent(settings.layout      || '0') +
     '&slot0='       + encodeURIComponent(settings.slot0       || '2') +
     '&slot1='       + encodeURIComponent(settings.slot1       || '1') +
@@ -565,6 +581,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
       msg[KEY_DARK_MODE]   = resolveDarkMode();
       Pebble.sendAppMessage(msg, function(){}, function(){});
       fetchData();
+      scheduleFetch();  // apply the (possibly changed) refresh interval
       if (settings.darkMode === '2') fetchWeather();
     } catch(err) {
       console.error('Steady: config parse error: ' + err);
