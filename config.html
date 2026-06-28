@@ -285,6 +285,17 @@
         <input type="password" id="dexcomPass" placeholder="••••••••">
       </div>
     </div>
+    <div class="field field-full">
+      <div class="field-label">Refresh Interval
+        <span class="field-hint">How often to fetch new glucose data</span>
+      </div>
+      <select id="refreshInterval">
+        <option value="1">Every 1 minute</option>
+        <option value="2">Every 2 minutes</option>
+        <option value="5">Every 5 minutes</option>
+        <option value="10">Every 10 minutes (battery saver)</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -438,6 +449,7 @@
   document.getElementById('urgentLow').value   = params.urgentLow   || '55';
   document.getElementById('urgentHigh').value  = params.urgentHigh  || '250';
   document.getElementById('graphWindow').value = params.graphWindow || '37';
+  document.getElementById('refreshInterval').value = params.refreshInterval || '5';
 
   // Toggle source sections
   document.getElementById('dataSource').addEventListener('change', function() {
@@ -495,7 +507,8 @@
       highThresh:  document.getElementById('highThresh').value,
       urgentLow:   document.getElementById('urgentLow').value,
       urgentHigh:  document.getElementById('urgentHigh').value,
-      graphWindow: document.getElementById('graphWindow').value
+      graphWindow: document.getElementById('graphWindow').value,
+      refreshInterval: document.getElementById('refreshInterval').value
     };
 
     var encoded = encodeURIComponent(JSON.stringify(data));
