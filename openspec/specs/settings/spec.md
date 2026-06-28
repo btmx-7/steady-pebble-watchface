@@ -19,6 +19,22 @@ The settings page MUST expose a Graph Window selector so the user can choose how
 - **THEN** `settings.graphWindow` is "25"
 - **AND** the next Nightscout fetch requests `count=25`
 
+### Requirement: CGM Refresh Interval Setting
+
+The settings page MUST expose a Refresh Interval selector so the user can choose how often the phone fetches new glucose data.
+
+#### Scenario: User selects refresh interval
+
+- **WHEN** the user opens settings
+- **THEN** a "Refresh Interval" select shows options: every 1 minute, every 2 minutes, every 5 minutes, every 10 minutes (battery saver)
+- **AND** the current value is pre-selected
+
+#### Scenario: Refresh interval saved and applied
+
+- **WHEN** the user saves settings with "every 1 minute" selected
+- **THEN** `settings.refreshInterval` is "1"
+- **AND** the CGM polling timer is rescheduled to fetch once per minute without restarting the companion JS
+
 ### Requirement: Threshold Alert Vibration
 
 The settings page MUST let the user turn glucose threshold vibration alerts on or off, and independently choose which Pebble OS-native vibration type is used for each of the four thresholds (Low, High, Urgent Low, Urgent High).
