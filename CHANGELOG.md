@@ -3,6 +3,8 @@
 All notable changes to Steady, newest first.
 
 ## [Unreleased]
+
+## [3.1.0] - 2026-06-28
 - New: configurable CGM refresh interval (1, 2, 5, or 10 minutes) on the settings page. Set it to 1 minute to sync glucose updates with sources like Juggluco, or 10 minutes to save battery.
 
 ## [3.0.1] - 2026-06-20
