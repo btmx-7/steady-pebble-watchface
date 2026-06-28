@@ -26,7 +26,7 @@ The settings page MUST expose a Refresh Interval selector so the user can choose
 #### Scenario: User selects refresh interval
 
 - **WHEN** the user opens settings
-- **THEN** a "Refresh Interval" select shows options: every 1 minute, every 2 minutes, every 5 minutes
+- **THEN** a "Refresh Interval" select shows options: every 1 minute, every 2 minutes, every 5 minutes, every 10 minutes (battery saver)
 - **AND** the current value is pre-selected
 
 #### Scenario: Refresh interval saved and applied

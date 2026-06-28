@@ -3,7 +3,7 @@
 All notable changes to Steady, newest first.
 
 ## [Unreleased]
-- New: configurable CGM refresh interval (1, 2, or 5 minutes) on the settings page. Set it to 1 minute to sync glucose updates with sources like Juggluco.
+- New: configurable CGM refresh interval (1, 2, 5, or 10 minutes) on the settings page. Set it to 1 minute to sync glucose updates with sources like Juggluco, or 10 minutes to save battery.
 
 ## [3.0.1] - 2026-06-20
 - Improved: restricted official support to Pebble Time 2 (emery) and Pebble Round 2 (gabbro); other Pebble models are "coming soon" instead of declared as supported.
