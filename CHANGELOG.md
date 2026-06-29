@@ -3,6 +3,8 @@
 All notable changes to Steady, newest first.
 
 ## [Unreleased]
+
+## [3.2.0] - 2026-06-29
 - New: Mono color theme — a white/gray/black palette for light and dark modes. Semantic status stays legible: red for danger, orange (light) / yellow (dark) for warnings, and green for positive.
 
 ## [3.1.0] - 2026-06-28
