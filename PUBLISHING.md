@@ -110,8 +110,17 @@ The command will:
 2. Read the built PBW from `build/Steady-watchface.pbw`
 3. Collect screenshots — either auto-captured from the emulator, or passed
    explicitly with `--screenshots`. Each screenshot's platform is inferred
-   from its filename prefix (`emery_…`, `gabbro_…`), so pass the prefixed
-   files for a deterministic per-platform mapping:
+   from its filename prefix (`emery_…`, `gabbro_…`); `--screenshots` files
+   whose prefix is not a platform are **rejected with an error**, so always
+   pass the prefixed files.
+
+   > ⚠️ **Auto-capture does NOT produce the 5 use cases.** It captures only
+   > whatever the watchface is *currently showing* — one shot per platform,
+   > from the release PBW (no `DEMO_DATA`). It cannot cycle the demo
+   > scenarios. To ship the cyan/green/yellow/red/purple set, generate them
+   > first with `STORE=1 ./scripts/screenshot-sweep.sh` (+ `PLATFORM=gabbro`)
+   > and pass all 10 explicitly:
+
    ```bash
    pebble publish --screenshots \
      resources/screenshots/emery_in_range.png \
