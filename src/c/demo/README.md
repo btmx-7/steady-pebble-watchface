@@ -34,6 +34,13 @@ near-identical shots.
 | 2 | `high_alerts` | 195     | Weather, Steps, Battery, Heart Rate  | No        | Yellow | Dark  | 20:34 | Weather at **max**, battery **low**, HR **high** |
 | 3 | `no_data`     | 0       | Heart Rate, Battery, Steps, Weather  | No        | Red    | Light | 16:59 | HR & weather **"--"**, steps 0, battery **full** |
 | 4 | `stale`       | 120     | Battery, CGM, Heart Rate, Steps      | Yes       | Purple | Dark  | 11:38 | CGM **stale** (gray) + battery mid |
+| 5 | `mono_light`  | 132     | CGM, Battery, Heart Rate, Weather    | Yes       | Mono   | Light | 10:48 | **Mono** light: dark-gray lead hour, white trailing minute, no-data HR slot |
+| 6 | `mono_dark`   | 118     | Battery, CGM, Steps, Heart Rate      | Yes       | Mono   | Dark  | 14:25 | **Mono** dark: dark-gray lead hour, light-gray trailing minute, no-data HR slot |
+
+States 5–6 are Mono QA and sit **outside** the default 5-state sweep (the sweep
+cold-boots once per state and ~5 boots is the reliable ceiling). Shoot them on
+their own with `STATES="5 6" ./scripts/screenshot-sweep.sh`, or just cycle to
+them with UP/DOWN in the interactive build.
 
 Notes:
 - The set is held at **5** scenarios on purpose: the sweep cold-boots the
