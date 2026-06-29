@@ -1,7 +1,7 @@
 {
   "name": "steady",
   "author": "btmx-7",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "keywords": [
     "pebble-app",
     "watchface",
@@ -56,6 +56,12 @@
     },
     "resources": {
       "media": [
+        {
+          "type": "bitmap",
+          "name": "MENU_ICON",
+          "menuIcon": true,
+          "file": "images/menu_icon.png"
+        },
         {
           "type": "font",
           "name": "TIME_DIGITS_64",

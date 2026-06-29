@@ -93,7 +93,8 @@ const ThemeColors k_theme_dark[COLOR_THEME_COUNT] = {
     .text_inverted = GColorFromHEX(0xFFFFFF),
     .icon_default = GColorFromHEX(0xFFFFFF), .icon_subtle = GColorFromHEX(0xAAAAAA),
     .border_subtle = GColorFromHEX(0x555555),
-    .state_positive = GColorFromHEX(0x00FF55), .state_warning = GColorFromHEX(0xFFFF00),
+    // positive=green/spring-green, warning=yellow/yellow, danger=red/red.
+    .state_positive = GColorFromHEX(0x00FFAA), .state_warning = GColorFromHEX(0xFFFF00),
     .state_danger = GColorFromHEX(0xFF0000), .state_inactive = GColorFromHEX(0xAAAAAA),
     .state_disabled = GColorFromHEX(0x555555),
   },
@@ -182,16 +183,17 @@ const ThemeColors k_theme_light[COLOR_THEME_COUNT] = {
   },
   [COLOR_THEME_MONO] = {
     .bg = GColorFromHEX(0xAAAAAA), .bg_inverted = GColorFromHEX(0x000000),
-    // text_default drives the trailing-minute digit (M2) → white.
-    .text_default = GColorFromHEX(0xFFFFFF), .text_subtle = GColorFromHEX(0x555555),
+    // text_default drives the trailing-minute digit (M2) → dark gray.
+    .text_default = GColorFromHEX(0x555555), .text_subtle = GColorFromHEX(0x555555),
     .text_inverted = GColorFromHEX(0x000000),
     .icon_default = GColorFromHEX(0x000000), .icon_subtle = GColorFromHEX(0x555555),
     // border_subtle is the widget track ring (slot with data) → white.
     .border_subtle = GColorFromHEX(0xFFFFFF),
-    .state_positive = GColorFromHEX(0x00AA00), .state_warning = GColorFromHEX(0xFFAA00),
+    // positive=lime/bright-green, warning=orange/orange, danger=red/dark-candy-apple.
+    .state_positive = GColorFromHEX(0x55FF00), .state_warning = GColorFromHEX(0xFF5500),
     // inactive = no-data widget value (light gray); disabled = empty track /
     // disconnected (dark gray).
-    .state_danger = GColorFromHEX(0xFF0000), .state_inactive = GColorFromHEX(0xAAAAAA),
+    .state_danger = GColorFromHEX(0xAA0000), .state_inactive = GColorFromHEX(0xAAAAAA),
     .state_disabled = GColorFromHEX(0x555555),
   },
 };

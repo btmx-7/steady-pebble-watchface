@@ -1451,16 +1451,27 @@ static void prv_unobstructed_did_change(void *context) {
 // changes after the window already exists (i.e. from inbox_received_handler),
 // those layers need their colors re-pushed explicitly.
 // Fill colors for the 4 Simple digits (H1, H2, M1, M2). Driven by text roles,
-// with a Mono-theme override: in dark mode the leading hour digit reads as dark
-// gray, while the shared text/subtle role stays light gray for the date text.
+// with a Mono-theme override on the leading-hour digit so the outer digits read
+// muted (gray) and the inner two stay full contrast: in light mode the leading
+// hour is dark gray (via text/subtle), in dark mode it's lifted to light gray.
 static void prv_simple_digit_colors(GColor out[4]) {
   out[0] = s_theme.text_subtle;    // H1 — leading hour
   out[1] = s_theme.text_inverted;  // H2 — trailing hour
   out[2] = s_theme.text_inverted;  // M1 — leading minute
   out[3] = s_theme.text_default;   // M2 — trailing minute
   if (s_settings.color_theme == COLOR_THEME_MONO && s_settings.dark_mode) {
-    out[0] = GColorFromHEX(0x555555);  // leading hour → dark gray
+    out[0] = GColorFromHEX(0xAAAAAA);  // leading hour → light gray
   }
+}
+
+// Day/month date text. Normally text/subtle, but the Mono theme pushes it to
+// full contrast (black in light, white in dark) so the date reads stronger than
+// the unit text that also uses text/subtle.
+static GColor prv_date_text_color(void) {
+  if (s_settings.color_theme == COLOR_THEME_MONO) {
+    return s_settings.dark_mode ? GColorFromHEX(0xFFFFFF) : GColorFromHEX(0x000000);
+  }
+  return s_theme.text_subtle;
 }
 
 static void apply_theme_to_layers(void) {
@@ -1468,8 +1479,8 @@ static void apply_theme_to_layers(void) {
 
   if (s_simple_bt_layer)    text_layer_set_text_color(s_simple_bt_layer, s_theme.icon_default);
   if (s_simple_music_layer) text_layer_set_text_color(s_simple_music_layer, s_theme.icon_subtle);
-  if (s_simple_day_layer)   text_layer_set_text_color(s_simple_day_layer, s_theme.text_subtle);
-  if (s_simple_month_layer) text_layer_set_text_color(s_simple_month_layer, s_theme.text_subtle);
+  if (s_simple_day_layer)   text_layer_set_text_color(s_simple_day_layer, prv_date_text_color());
+  if (s_simple_month_layer) text_layer_set_text_color(s_simple_month_layer, prv_date_text_color());
 
   GColor digit_colors[4];
   prv_simple_digit_colors(digit_colors);
@@ -1478,8 +1489,8 @@ static void apply_theme_to_layers(void) {
   }
 
   if (s_dash_bt_layer)    text_layer_set_text_color(s_dash_bt_layer, s_theme.icon_default);
-  if (s_dash_day_layer)   text_layer_set_text_color(s_dash_day_layer, s_theme.text_subtle);
-  if (s_dash_month_layer) text_layer_set_text_color(s_dash_month_layer, s_theme.text_subtle);
+  if (s_dash_day_layer)   text_layer_set_text_color(s_dash_day_layer, prv_date_text_color());
+  if (s_dash_month_layer) text_layer_set_text_color(s_dash_month_layer, prv_date_text_color());
   if (s_dash_time_layer)  text_layer_set_text_color(s_dash_time_layer, s_theme.text_inverted);
   if (s_dash_unit_layer)  text_layer_set_text_color(s_dash_unit_layer, s_theme.text_subtle);
 
@@ -1560,14 +1571,14 @@ static void main_window_load(Window *window) {
 
   s_simple_day_layer = text_layer_create(GRect(4, 106, 18, 16));
   text_layer_set_background_color(s_simple_day_layer, GColorClear);
-  text_layer_set_text_color(s_simple_day_layer, s_theme.text_subtle);
+  text_layer_set_text_color(s_simple_day_layer, prv_date_text_color());
   text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_day_layer));
 
   s_simple_month_layer = text_layer_create(GRect(178, 106, 18, 16));
   text_layer_set_background_color(s_simple_month_layer, GColorClear);
-  text_layer_set_text_color(s_simple_month_layer, s_theme.text_subtle);
+  text_layer_set_text_color(s_simple_month_layer, prv_date_text_color());
   text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentLeft);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_month_layer));
@@ -1590,14 +1601,14 @@ static void main_window_load(Window *window) {
 
   s_dash_day_layer = text_layer_create(GRect(176, 74, 20, 14));
   text_layer_set_background_color(s_dash_day_layer, GColorClear);
-  text_layer_set_text_color(s_dash_day_layer, s_theme.text_subtle);
+  text_layer_set_text_color(s_dash_day_layer, prv_date_text_color());
   text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_dash_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_day_layer));
 
   s_dash_month_layer = text_layer_create(GRect(176, 94, 20, 14));
   text_layer_set_background_color(s_dash_month_layer, GColorClear);
-  text_layer_set_text_color(s_dash_month_layer, s_theme.text_subtle);
+  text_layer_set_text_color(s_dash_month_layer, prv_date_text_color());
   text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_dash_month_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_month_layer));

@@ -3,7 +3,7 @@
 ## Status
 
 Build: ✓ Complete (Steady-watchface.pbw, 154KB)
-Screenshots: ✓ Complete (3 assets)
+Screenshots: 5 store use cases per platform (regenerate via `STORE=1 scripts/screenshot-sweep.sh`)
 Metadata: ✓ Complete (package.json)
 SDK: ⚠ Requires installation
 
@@ -17,12 +17,41 @@ SDK: ⚠ Requires installation
 - **Last built**: 2026-04-16 19:09
 
 ### Screenshots (in `resources/screenshots/`)
-1. `screenshot_T2_simple_dark.png` — Time 2 Simple layout (200×228)
-2. `screenshot_R2_simple_dark.png` — Round 2 Simple layout (260×260)
+
+The store set is the 5 demo use cases, captured per platform (200×228 for
+Time 2 / emery, 260×260 for Round 2 / gabbro):
+
+| File suffix | Use case | Theme / mode |
+|-------------|----------|--------------|
+| `_in_range`    | nominal, CGM in range        | cyan / dark   |
+| `_urgent_low`  | CGM urgent-low + charging    | green / light |
+| `_high_alerts` | weather max, low batt, HR hi | yellow / dark |
+| `_no_data`     | HR & weather "--", full batt | red / light   |
+| `_stale`       | CGM stale (gray)             | purple / dark |
+
+So 10 files: `emery_in_range.png … emery_stale.png` and
+`gabbro_in_range.png … gabbro_stale.png`.
+
+**Generate them** (needs the Pebble SDK + emulator; one command per platform):
+```bash
+STORE=1 ./scripts/screenshot-sweep.sh                 # emery → resources/screenshots/emery_*.png
+STORE=1 PLATFORM=gabbro ./scripts/screenshot-sweep.sh # gabbro → resources/screenshots/gabbro_*.png
+```
+
+> **Filename prefix matters.** `pebble publish` infers each screenshot's
+> platform from the part of the filename **before the first underscore**
+> (`emery_…` → Time 2, `gabbro_…` → Round 2). Files must be named
+> `<platform>_<anything>.png`. The old `screenshot_T2_…` / `screenshot_R2_…`
+> names had the prefix `screenshot`, which matches no platform, so publish
+> could not map them and the wrong shot showed for a given watch.
+
+> The legacy `emery_simple_dark.png` / `gabbro_simple_dark.png` (a single
+> cyan/dark shot) and the stale `states/` set predate this 5-case scheme;
+> remove them once the set above is regenerated.
 
 ### Metadata
 - **Display Name**: Steady
-- **Short Description** (package.json): "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 8 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in."
+- **Short Description** (package.json): "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 9 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in."
 - **Long Description** (package.json): Clean watchface framing with CGM as a natural widget, not a medical device identity
 - **UUID**: 552fd91e-ad93-4d0f-ae44-74bc9d3108d6 (unchanged)
 - **Version**: 1.0.0
@@ -79,8 +108,38 @@ pebble publish
 The command will:
 1. Read metadata from `package.json`
 2. Read the built PBW from `build/Steady-watchface.pbw`
-3. Prepare screenshots from `resources/screenshots/`
-4. Upload to Pebble App Store
+3. Collect screenshots — either auto-captured from the emulator, or passed
+   explicitly with `--screenshots`. Each screenshot's platform is inferred
+   from its filename prefix (`emery_…`, `gabbro_…`); `--screenshots` files
+   whose prefix is not a platform are **rejected with an error**, so always
+   pass the prefixed files.
+
+   > ⚠️ **Auto-capture does NOT produce the 5 use cases.** It captures only
+   > whatever the watchface is *currently showing* — one shot per platform,
+   > from the release PBW (no `DEMO_DATA`). It cannot cycle the demo
+   > scenarios. To ship the cyan/green/yellow/red/purple set, generate them
+   > first with `STORE=1 ./scripts/screenshot-sweep.sh` (+ `PLATFORM=gabbro`)
+   > and pass all 10 explicitly:
+
+   ```bash
+   pebble publish --screenshots \
+     resources/screenshots/emery_in_range.png \
+     resources/screenshots/emery_urgent_low.png \
+     resources/screenshots/emery_high_alerts.png \
+     resources/screenshots/emery_no_data.png \
+     resources/screenshots/emery_stale.png \
+     resources/screenshots/gabbro_in_range.png \
+     resources/screenshots/gabbro_urgent_low.png \
+     resources/screenshots/gabbro_high_alerts.png \
+     resources/screenshots/gabbro_no_data.png \
+     resources/screenshots/gabbro_stale.png
+   ```
+   (Each platform takes up to 5 screenshots; the order above sets display order.)
+4. Upload PBW + per-platform screenshots + metadata to the App Store
+
+> Screenshots can also be added/curated per platform afterwards via
+> **Manage Asset Collections** in the developer portal (one collection per
+> supported platform, up to 5 screenshots each).
 
 Expected output:
 ```
@@ -94,7 +153,7 @@ View at: https://apps.repebble.com/applications/552fd91e-ad93-4d0f-ae44-74bc9d31
 ### Step 3: Verify Listing
 Visit the returned URL (or check https://apps.repebble.com) and confirm:
 - ✓ App name: "Steady"
-- ✓ All 3 screenshots display correctly
+- ✓ Screenshots display correctly **and** match the connected platform (Time 2 shows `emery_*`, Round 2 shows `gabbro_*`)
 - ✓ Short description visible
 - ✓ Long description complete
 - ✓ Platform list includes: Time 2, Round 2, Time, Steel, Round
@@ -181,10 +240,11 @@ If missing, rebuild:
 pebble build
 ```
 
-### Screenshots not uploading
-Check that these files exist and are valid PNG:
-- `resources/screenshots/screenshot_T2_simple_dark.png`
-- `resources/screenshots/screenshot_R2_simple_dark.png`
+### Screenshots not uploading, or wrong screenshot shown for a platform
+Check that these files exist, are valid PNG, and keep their `<platform>_`
+filename prefix (publish maps screenshots to platforms by that prefix):
+- `resources/screenshots/emery_simple_dark.png` (Time 2)
+- `resources/screenshots/gabbro_simple_dark.png` (Round 2)
 
 ---
 
