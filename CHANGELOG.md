@@ -3,6 +3,7 @@
 All notable changes to Steady, newest first.
 
 ## [Unreleased]
+- New: Mono color theme — a white/gray/black palette for light and dark modes. Semantic status stays legible: red for danger, orange (light) / yellow (dark) for warnings, and green for positive.
 
 ## [3.1.0] - 2026-06-28
 - New: configurable CGM refresh interval (1, 2, 5, or 10 minutes) on the settings page. Set it to 1 minute to sync glucose updates with sources like Juggluco, or 10 minutes to save battery. Thanks to NimbleMink7921 for the feature request.
