@@ -586,7 +586,9 @@ static void prv_populate_slot_data(SlotRenderData *d, SlotType type) {
       snprintf(d->unit_str, sizeof(d->unit_str), "steps");
       d->icon_glyph = ICON_STEPS;
       d->icon_filled = (s_steps_available && steps > 0);
-      d->icon_color = (s_steps_available && steps > 0) ? s_theme.icon_subtle : s_theme.state_inactive;
+      // icon/default (the active-value token used by every other data slot),
+      // not icon/subtle — resolves per theme via s_theme.
+      d->icon_color = (s_steps_available && steps > 0) ? s_theme.icon_default : s_theme.state_inactive;
       break;
     }
     case SLOT_CGM: {

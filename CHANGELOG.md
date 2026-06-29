@@ -4,6 +4,9 @@ All notable changes to Steady, newest first.
 
 ## [Unreleased]
 
+## [3.2.2] - 2026-06-29
+- Fix: the steps widget's active value gauge now uses the standard icon/default color like the other widgets, instead of the subtler icon/subtle token.
+
 ## [3.2.1] - 2026-06-29
 - Fix: time digits no longer disappear when a Quick View banner covers the watchface — the hours and minutes now stay visible behind the banner.
 - Improved: refined the Mono theme — light mode now uses a light-gray background with a white widget ring and white trailing-minute digit; dark mode reads the leading hour in dark gray and the trailing minute in light gray.
