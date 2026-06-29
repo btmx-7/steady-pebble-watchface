@@ -14,9 +14,9 @@
  * Color theme matches ColorThemeId in theme_colors.h:
  *   0=RED, 1=ORANGE, 2=YELLOW, 3=GREEN, 4=CYAN, 5=BLUE, 6=PURPLE, 7=PINK, 8=MONO
  *
- * Each scenario also pins a distinct wall-clock time (see TIMES in
- * scripts/screenshot-sweep.sh) so the screenshot sweep produces a
- * heterogeneous panel of hours, not 5 shots of the same minute.
+ * Each scenario pins its own wall-clock time via demo_hour/demo_min (the last
+ * two columns). main.c renders that fixed time under DEMO_DATA, so screenshots
+ * show a deterministic clock without depending on the host RTC or faketime.
  *
  * Design of the 5-scenario set:
  *   - Exactly ONE scenario (in_range) is fully nominal: every slot shows a
@@ -40,17 +40,17 @@
 #include "demo.h"
 
 const DemoScenario demo_scenarios[DEMO_SCENARIO_COUNT] = {
-  /* name           gluc trend delta  age   wT    wMin  wMax  wI HR   steps  bat chg layout slots       graph theme dark  time/notes */
-  { "in_range",     120, 3,     3,    240,  18,   12,   24,   0, 76,  6842,  70, 0,   0,     {5,1,2,4},  0,    4,    1 },  // 00:07 cyan/dark   — nominal: CGM in-range, all slots healthy
-  { "urgent_low",   45,  6,    -18,   60,   14,   8,    19,   0, 70,  3120,  28, 1,   0,     {4,3,5,1},  3,    3,    0 },  // 09:21 green/light  — CGM urgent-low + battery charging
-  { "high_alerts",  195, 1,     10,   120,  34,   19,   34,   0, 172, 12480, 7,  0,   0,     {2,4,1,3},  1,    2,    1 },  // 20:34 yellow/dark — no CGM; weather at max, battery low, HR high
-  { "no_data",      0,   7,     0,    0,   -128, -128, -128,  7, 0,   0,     100,0,   0,     {3,1,4,2},  3,    0,    0 },  // 16:59 red/light    — no CGM; HR & weather "--", steps 0, battery full
-  { "stale",        120, 7,     0,    1800, 16,   9,    17,   4, 64,  5200,  45, 0,   0,     {1,5,3,4},  0,    6,    1 },  // 11:38 purple/dark — CGM stale (gray); battery mid
+  /* name           gluc trend delta  age   wT    wMin  wMax  wI HR   steps  bat chg layout slots       graph theme dark  hh  mm   notes */
+  { "in_range",     120, 3,     3,    240,  18,   12,   24,   0, 76,  6842,  70, 0,   0,     {5,1,2,4},  0,    4,    1,   0,  7 },  // 00:07 cyan/dark   — nominal: CGM in-range, all slots healthy
+  { "urgent_low",   45,  6,    -18,   60,   14,   8,    19,   0, 70,  3120,  28, 1,   0,     {4,3,5,1},  3,    3,    0,   9, 21 },  // 09:21 green/light  — CGM urgent-low + battery charging
+  { "high_alerts",  195, 1,     10,   120,  34,   19,   34,   0, 172, 12480, 7,  0,   0,     {2,4,1,3},  1,    2,    1,  20, 34 },  // 20:34 yellow/dark — no CGM; weather at max, battery low, HR high
+  { "no_data",      0,   7,     0,    0,   -128, -128, -128,  7, 0,   0,     100,0,   0,     {3,1,4,2},  3,    0,    0,  16, 59 },  // 16:59 red/light    — no CGM; HR & weather "--", steps 0, battery full
+  { "stale",        120, 7,     0,    1800, 16,   9,    17,   4, 64,  5200,  45, 0,   0,     {1,5,3,4},  0,    6,    1,  11, 38 },  // 11:38 purple/dark — CGM stale (gray); battery mid
   // Mono theme QA (not part of the default 5-state sweep; shoot via STATES="5 6"
   // or cycle to them interactively). Each carries one no-data slot (HR=0) so the
   // light-gray inactive value and dark-gray empty track are both visible.
-  { "mono_light",   132, 3,     2,    300,  21,   14,   25,   1, 0,   8200,  65, 0,   0,     {5,1,3,2},  0,    8,    0 },  // 10:48 mono/light — lead hour dark gray, trailing min white
-  { "mono_dark",    118, 4,    -2,    300,  19,   11,   22,   2, 0,   9100,  80, 0,   0,     {1,5,4,3},  0,    8,    1 },  // 14:25 mono/dark  — lead hour dark gray, trailing min light gray
+  { "mono_light",   132, 3,     2,    300,  21,   14,   25,   1, 0,   8200,  65, 0,   0,     {5,1,3,2},  0,    8,    0,  10, 48 },  // 10:48 mono/light — lead hour dark gray, trailing min white
+  { "mono_dark",    118, 4,    -2,    300,  19,   11,   22,   2, 0,   9100,  80, 0,   0,     {1,5,4,3},  0,    8,    1,  14, 25 },  // 14:25 mono/dark  — lead hour dark gray, trailing min light gray
 };
 
 #endif /* DEMO_DATA */

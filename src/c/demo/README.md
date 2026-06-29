@@ -37,16 +37,16 @@ near-identical shots.
 | 5 | `mono_light`  | 132     | CGM, Battery, Heart Rate, Weather    | Yes       | Mono   | Light | 10:48 | **Mono** light: dark-gray lead hour, white trailing minute, no-data HR slot |
 | 6 | `mono_dark`   | 118     | Battery, CGM, Steps, Heart Rate      | Yes       | Mono   | Dark  | 14:25 | **Mono** dark: dark-gray lead hour, light-gray trailing minute, no-data HR slot |
 
-States 5–6 are Mono QA and sit **outside** the default 5-state sweep (the sweep
-cold-boots once per state and ~5 boots is the reliable ceiling). Shoot them on
-their own with `STATES="5 6" ./scripts/screenshot-sweep.sh`, or just cycle to
-them with UP/DOWN in the interactive build.
+States 5–6 are Mono QA and sit outside the default `STATES` (0–4 = the store
+set). Shoot them with `STATES="5 6" ./scripts/screenshot-sweep.sh`, add them to
+a full run (`STATES="0 1 2 3 4 5 6"`), or cycle to them with UP/DOWN in the
+interactive build.
 
 Notes:
-- The set is held at **5** scenarios on purpose: the sweep cold-boots the
-  emulator once per scenario to pin its clock, and ~5 cold boots is the
-  reliable ceiling — longer 8-state sweeps wedged QEMU on the 6th boot
-  (splash-screen loop).
+- Each scenario's clock is baked into the build (`demo_hour`/`demo_min`,
+  rendered by main.c under `DEMO_DATA`), so the sweep cold-boots the emulator
+  **once** and warm-reinstalls every state into it. No per-scenario cold boots,
+  so there's no ~5-state QEMU wedge ceiling — run as many states as you like.
 - Exactly **one** scenario (`in_range`) is fully nominal; the other four each
   mix edge/alert states (battery charging / low / full, weather max,
   unavailable `--` readings, HR over threshold, steps 0, CGM stale).
@@ -61,8 +61,8 @@ Notes:
   scenario (under `DEMO_DATA` the live battery service is bypassed), so the
   charging / low / full states are deterministic in screenshots.
 - Themes used: Cyan, Green, Yellow, Red, Purple — 3 dark / 2 light.
-- `Time` is the wall-clock time the screenshot sweep pins via `faketime`
-  (see `scripts/screenshot-sweep.sh`); spread across the day for a
+- `Time` is the wall-clock time baked into each scenario (`demo_hour`/
+  `demo_min` in `demo.c`, rendered under `DEMO_DATA`); spread across the day for a
   heterogeneous panel of hours.
 
 ## Usage
@@ -89,28 +89,28 @@ pebble install --emulator emery
 ### Screenshot sweep
 
 ```bash
-./scripts/screenshot-sweep.sh                   # all 5 states, emery (timed)
+./scripts/screenshot-sweep.sh                   # default states (0-4), emery
 PLATFORM=gabbro ./scripts/screenshot-sweep.sh   # round
 STATES="0 3 4"  ./scripts/screenshot-sweep.sh   # subset
-PIN_TIMES=0     ./scripts/screenshot-sweep.sh   # one clock, faster
+STATES="0 1 2 3 4 5 6" ./scripts/screenshot-sweep.sh  # everything incl. mono
+STORE=1 ./scripts/screenshot-sweep.sh           # publish-ready resources/screenshots/<platform>_<name>.png
 ```
 
-Outputs to `screenshots/demo/<platform>_<i>_<name>.png`.
+Outputs to `screenshots/demo/<platform>_<i>_<name>.png` (or
+`resources/screenshots/<platform>_<name>.png` under `STORE=1`).
 
 ## Adding a new scenario
 
 1. Bump `DEMO_SCENARIO_COUNT` in `demo.h`.
-2. Append a row to `demo_scenarios[]` in `demo.c`, including a `color_theme`
-   and `dark_mode` value.
-3. Append the short name to `NAMES=(...)` *and* a time to `TIMES=(...)` in
-   `scripts/screenshot-sweep.sh`, keeping both arrays aligned by index with
-   `demo_scenarios[]`.
+2. Append a row to `demo_scenarios[]` in `demo.c`, including `color_theme`,
+   `dark_mode`, and the pinned `demo_hour`/`demo_min`.
+3. Append the short name to `NAMES=(...)` in `scripts/screenshot-sweep.sh`,
+   keeping it aligned by index with `demo_scenarios[]`.
 4. Update the table above.
 
-Going past ~5 scenarios re-introduces the 6th-cold-boot QEMU wedge in the
-default (timed) sweep; if you need more, run them in batches via `STATES=`
-(e.g. `STATES="0 1 2 3 4"` then `STATES="5 6 7"`) with a `pebble kill` between
-batches, or use `PIN_TIMES=0` (single cold boot for the whole run).
+The clock is baked into the build, so the sweep cold-boots once and warm-
+reinstalls each state — add as many scenarios as you like without the old
+6th-cold-boot QEMU wedge.
 
 Trend / slot / layout / graph-pattern / color-theme codes are listed in the
 header comment of `demo.c`.

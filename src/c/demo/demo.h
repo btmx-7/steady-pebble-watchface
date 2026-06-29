@@ -28,6 +28,8 @@ typedef struct {
   uint8_t   graph_pattern;         // 0=wave, 1=rising, 2=falling, 3=flat-low, 4=spike
   uint8_t   color_theme;           // ColorThemeId (0-8)
   uint8_t   dark_mode;             // 0=light, 1=dark
+  uint8_t   demo_hour;             // pinned clock hour (0-23), shown in screenshots
+  uint8_t   demo_min;              // pinned clock minute (0-59)
 } DemoScenario;
 
 #define DEMO_SCENARIO_COUNT 7

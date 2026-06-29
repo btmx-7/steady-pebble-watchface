@@ -278,6 +278,11 @@ static bool    s_steps_available = false;  // 0 steps is a valid reading; this d
 // full states deterministically in QA screenshots.
 static uint8_t s_demo_battery_pct      = 50;
 static bool    s_demo_battery_charging = false;
+// Clock is normally the live RTC; under DEMO_DATA the scenario pins it so each
+// QA/store screenshot shows a fixed time without depending on the host clock
+// (faketime / emulator RTC latching proved unreliable).
+static uint8_t s_demo_hour = 10;
+static uint8_t s_demo_min  = 9;
 #endif
 
 // Alert state
@@ -772,9 +777,21 @@ static void prv_update_all_slots(void) {
 
 // ─── Update Display ──────────────────────────────────────────────────────────
 
-static void update_display_simple(void) {
+// Wall-clock time to render. Live RTC normally; under DEMO_DATA the hour/minute
+// are overridden by the active scenario so screenshots show a pinned time
+// regardless of the host clock.
+static struct tm *display_tm(void) {
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
+#ifdef DEMO_DATA
+  t->tm_hour = s_demo_hour;
+  t->tm_min  = s_demo_min;
+#endif
+  return t;
+}
+
+static void update_display_simple(void) {
+  struct tm *t = display_tm();
 
   // 4 separate digit layers
   static char dig[4][4];  // single char + null
@@ -820,8 +837,7 @@ static void update_display_simple(void) {
 }
 
 static void update_display_dashboard(void) {
-  time_t now = time(NULL);
-  struct tm *t = localtime(&now);
+  struct tm *t = display_tm();
 
   // Single-row time "HH:MM"
   static char s_time_buf[8];
@@ -1746,6 +1762,8 @@ static void apply_demo_state(int n) {
   s_steps_available = true;  // health subscription is skipped under DEMO_DATA; fixture is ground truth
   s_demo_battery_pct      = d->battery_pct;
   s_demo_battery_charging = d->battery_charging != 0;
+  s_demo_hour             = d->demo_hour;
+  s_demo_min              = d->demo_min;
 
   s_settings.layout   = (WatchLayout)d->layout;
   s_settings.slots[0] = (SlotType)d->slots[0];
