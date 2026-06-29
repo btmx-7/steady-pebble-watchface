@@ -4,6 +4,9 @@ All notable changes to Steady, newest first.
 
 ## [Unreleased]
 
+## [3.2.2] - 2026-06-29
+- Improved: further Mono theme tuning — the time reads with muted outer digits and full-contrast inner digits, the date is stronger (black in light, white in dark), and the danger/warning/positive status colors were retuned for each mode.
+
 ## [3.2.1] - 2026-06-29
 - Improved: refined the Mono theme — light mode now uses a light-gray background with a white widget ring and white trailing-minute digit; dark mode reads the leading hour in dark gray and the trailing minute in light gray.
 - Fix: time digits no longer disappear when a Quick View banner covers the watchface — the hours and minutes now stay visible behind the banner.
