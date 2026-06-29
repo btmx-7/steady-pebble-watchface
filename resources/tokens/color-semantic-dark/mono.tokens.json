@@ -165,12 +165,12 @@
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1,
-          1,
-          1
+          0.6666666666666666,
+          0.6666666666666666,
+          0.6666666666666666
         ],
         "alpha": 1,
-        "hex": "#FFFFFF"
+        "hex": "#AAAAAA"
       },
       "$extensions": {
         "com.figma.scopes": [

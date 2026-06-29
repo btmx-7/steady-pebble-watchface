@@ -1197,13 +1197,15 @@ void prv_layout_for_bounds(GRect bounds) {
   bool show_simple    = simple;
   bool show_dashboard = dashboard;
 
+  // Time digits stay visible even when a Quick View banner is active (compact),
+  // so the hours/minutes remain readable behind the banner instead of vanishing.
   for (int i = 0; i < 4; i++) {
     if (s_simple_digit[i])
-      layer_set_hidden(text_layer_get_layer(s_simple_digit[i]), !show_simple || compact);
+      layer_set_hidden(text_layer_get_layer(s_simple_digit[i]), !show_simple);
   }
   for (int i = 0; i < 4; i++) {
     if (s_simple_digit_stroke[i])
-      layer_set_hidden(s_simple_digit_stroke[i], !show_simple || compact);
+      layer_set_hidden(s_simple_digit_stroke[i], !show_simple);
   }
   if (s_simple_day_layer)   layer_set_hidden(text_layer_get_layer(s_simple_day_layer),   !show_simple);
   if (s_simple_month_layer) layer_set_hidden(text_layer_get_layer(s_simple_month_layer), !show_simple);
@@ -1245,7 +1247,9 @@ void prv_layout_for_bounds(GRect bounds) {
       // Horizontally centered, vertically top-anchored → shared baseline at equal Y.
       // Group: 94x112px, top-left (53, 58).
       // Z-order: stroke+fill interleaved per digit (H1, H2, M1, M2). Minute row on top.
-      if (!compact) {
+      // Positioned unconditionally (even in compact) so the digits stay placed
+      // and visible behind a Quick View banner.
+      {
         GRect digit_frames[4] = {
           GRect(53, 58,  48, 70),  // H1
           GRect(99, 58,  48, 70),  // H2
@@ -1302,10 +1306,12 @@ void prv_layout_for_bounds(GRect bounds) {
         }
       }
 
-      if (!compact) {
+      {
         // Box 48x70. H overlap -2, V overlap -28. Horizontally centered,
         // vertically top-anchored (shared baseline across all 4 digits).
         // Group: 94x112px centered at (130,130), top-left (83, 74).
+        // Positioned unconditionally (even in compact) so the digits stay placed
+        // and visible behind a Quick View banner.
         GRect digit_frames[4] = {
           GRect(83,  74,  48, 70),  // H1
           GRect(129, 74,  48, 70),  // H2
@@ -1442,6 +1448,19 @@ static void prv_unobstructed_did_change(void *context) {
 // are only colored once at creation in main_window_load. When the theme
 // changes after the window already exists (i.e. from inbox_received_handler),
 // those layers need their colors re-pushed explicitly.
+// Fill colors for the 4 Simple digits (H1, H2, M1, M2). Driven by text roles,
+// with a Mono-theme override: in dark mode the leading hour digit reads as dark
+// gray, while the shared text/subtle role stays light gray for the date text.
+static void prv_simple_digit_colors(GColor out[4]) {
+  out[0] = s_theme.text_subtle;    // H1 — leading hour
+  out[1] = s_theme.text_inverted;  // H2 — trailing hour
+  out[2] = s_theme.text_inverted;  // M1 — leading minute
+  out[3] = s_theme.text_default;   // M2 — trailing minute
+  if (s_settings.color_theme == COLOR_THEME_MONO && s_settings.dark_mode) {
+    out[0] = GColorFromHEX(0x555555);  // leading hour → dark gray
+  }
+}
+
 static void apply_theme_to_layers(void) {
   if (s_main_window) window_set_background_color(s_main_window, s_theme.bg);
 
@@ -1450,9 +1469,8 @@ static void apply_theme_to_layers(void) {
   if (s_simple_day_layer)   text_layer_set_text_color(s_simple_day_layer, s_theme.text_subtle);
   if (s_simple_month_layer) text_layer_set_text_color(s_simple_month_layer, s_theme.text_subtle);
 
-  GColor digit_colors[4] = {
-    s_theme.text_subtle, s_theme.text_inverted, s_theme.text_inverted, s_theme.text_default
-  };
+  GColor digit_colors[4];
+  prv_simple_digit_colors(digit_colors);
   for (int i = 0; i < 4; i++) {
     if (s_simple_digit[i]) text_layer_set_text_color(s_simple_digit[i], digit_colors[i]);
   }
@@ -1486,14 +1504,11 @@ static void main_window_load(Window *window) {
   // ── Simple: per-digit stroke + fill pairs ──
   // Z-order: each digit's stroke + fill is added as a unit, so H2 stacks on top of H1,
   // M1 on top of H2, etc. That way outlines are never covered by a neighbor's fill.
-  // Colors per Figma: H1=text/subtle, H2=text/inverted, M1=text/inverted, M2=text/default.
+  // Colors per Figma: H1=text/subtle, H2=text/inverted, M1=text/inverted, M2=text/default,
+  // with the Mono dark-mode leading-hour override applied by prv_simple_digit_colors.
   // H1/M1 right-aligned, H2/M2 left-aligned.
-  GColor digit_colors[4] = {
-    s_theme.text_subtle,    // H1 — text/subtle
-    s_theme.text_inverted,  // H2 — text/inverted
-    s_theme.text_inverted,  // M1 — text/inverted
-    s_theme.text_default    // M2 — text/default
-  };
+  GColor digit_colors[4];
+  prv_simple_digit_colors(digit_colors);
   GTextAlignment digit_aligns[4] = {
     GTextAlignmentCenter,  // H1
     GTextAlignmentCenter,  // H2
