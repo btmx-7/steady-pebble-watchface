@@ -42,8 +42,11 @@ INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pe
 PIN_TIMES="${PIN_TIMES:-1}"  # 1 = cold-boot each scenario under faketime so it shows its own clock
 
 # Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
-NAMES=(in_range urgent_low high_alerts no_data stale)
-TIMES=("00:07" "09:21" "20:34" "16:59" "11:38")
+# States 5-6 (mono_light/mono_dark) are NOT in the default STATES above — the
+# timed sweep cold-boots once per state and ~5 boots is the reliable ceiling, so
+# shoot the Mono pair on its own: STATES="5 6" ./scripts/screenshot-sweep.sh
+NAMES=(in_range urgent_low high_alerts no_data stale mono_light mono_dark)
+TIMES=("00:07" "09:21" "20:34" "16:59" "11:38" "10:48" "14:25")
 
 HAVE_FAKETIME=0
 if [[ "$PIN_TIMES" == "1" ]]; then

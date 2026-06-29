@@ -12,7 +12,7 @@
  * Layout: 0=SIMPLE, 1=DASHBOARD
  * Graph pattern: 0=wave, 1=rising, 2=falling, 3=flat-low, 4=spike
  * Color theme matches ColorThemeId in theme_colors.h:
- *   0=RED, 1=ORANGE, 2=YELLOW, 3=GREEN, 4=CYAN, 5=BLUE, 6=PURPLE, 7=PINK
+ *   0=RED, 1=ORANGE, 2=YELLOW, 3=GREEN, 4=CYAN, 5=BLUE, 6=PURPLE, 7=PINK, 8=MONO
  *
  * Each scenario also pins a distinct wall-clock time (see TIMES in
  * scripts/screenshot-sweep.sh) so the screenshot sweep produces a
@@ -46,6 +46,11 @@ const DemoScenario demo_scenarios[DEMO_SCENARIO_COUNT] = {
   { "high_alerts",  195, 1,     10,   120,  34,   19,   34,   0, 172, 12480, 7,  0,   0,     {2,4,1,3},  1,    2,    1 },  // 20:34 yellow/dark — no CGM; weather at max, battery low, HR high
   { "no_data",      0,   7,     0,    0,   -128, -128, -128,  7, 0,   0,     100,0,   0,     {3,1,4,2},  3,    0,    0 },  // 16:59 red/light    — no CGM; HR & weather "--", steps 0, battery full
   { "stale",        120, 7,     0,    1800, 16,   9,    17,   4, 64,  5200,  45, 0,   0,     {1,5,3,4},  0,    6,    1 },  // 11:38 purple/dark — CGM stale (gray); battery mid
+  // Mono theme QA (not part of the default 5-state sweep; shoot via STATES="5 6"
+  // or cycle to them interactively). Each carries one no-data slot (HR=0) so the
+  // light-gray inactive value and dark-gray empty track are both visible.
+  { "mono_light",   132, 3,     2,    300,  21,   14,   25,   1, 0,   8200,  65, 0,   0,     {5,1,3,2},  0,    8,    0 },  // 10:48 mono/light — lead hour dark gray, trailing min white
+  { "mono_dark",    118, 4,    -2,    300,  19,   11,   22,   2, 0,   9100,  80, 0,   0,     {1,5,4,3},  0,    8,    1 },  // 14:25 mono/dark  — lead hour dark gray, trailing min light gray
 };
 
 #endif /* DEMO_DATA */
