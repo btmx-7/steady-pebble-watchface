@@ -57,6 +57,12 @@
     "resources": {
       "media": [
         {
+          "type": "bitmap",
+          "name": "MENU_ICON",
+          "menuIcon": true,
+          "file": "images/menu_icon.png"
+        },
+        {
           "type": "font",
           "name": "TIME_DIGITS_64",
           "file": "fonts/Inter_18pt-Black.ttf",

@@ -5,6 +5,7 @@ All notable changes to Steady, newest first.
 ## [Unreleased]
 
 ## [3.2.2] - 2026-06-29
+- New: app-list menu icon for the watchface, shown next to its name in the watch launcher.
 - Improved: further Mono theme tuning — the time reads with muted outer digits and full-contrast inner digits, the date is stronger (black in light, white in dark), and the danger/warning/positive status colors were retuned for each mode.
 
 ## [3.2.1] - 2026-06-29
