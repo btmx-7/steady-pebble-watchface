@@ -26,6 +26,15 @@
 #   STATES="0 3 4"  ./scripts/screenshot-sweep.sh  # subset
 #   PIN_TIMES=0 ./scripts/screenshot-sweep.sh      # one clock, faster (skip per-scenario times)
 #
+# STORE mode — capture the publish-ready App Store screenshots. Writes
+# resources/screenshots/<platform>_<name>.png (e.g. emery_in_range.png), which
+# `pebble publish` maps to a platform by the <platform>_ filename prefix. Run it
+# once per platform; the default STATES (0-4) are exactly the 5 store use cases:
+# in_range (cyan/dark), urgent_low (green/light), high_alerts (yellow/dark),
+# no_data (red/light), stale (purple/dark).
+#   STORE=1 ./scripts/screenshot-sweep.sh                 # emery store set
+#   STORE=1 PLATFORM=gabbro ./scripts/screenshot-sweep.sh # round store set
+#
 # There are 5 scenarios (down from 8): cold-booting emery once per scenario
 # under faketime is what produces the per-state clocks, and ~5 cold boots is
 # the reliable ceiling — earlier 8-state sweeps wedged QEMU on the 6th cold
@@ -36,7 +45,12 @@ set -euo pipefail
 
 PLATFORM="${PLATFORM:-emery}"
 STATES="${STATES:-0 1 2 3 4}"
-OUT_DIR="${OUT_DIR:-screenshots/demo}"
+STORE="${STORE:-0}"  # 1 = write publish-ready resources/screenshots/<platform>_<name>.png
+if [[ "$STORE" == "1" ]]; then
+  OUT_DIR="${OUT_DIR:-resources/screenshots}"
+else
+  OUT_DIR="${OUT_DIR:-screenshots/demo}"
+fi
 BOOT_WAIT="${BOOT_WAIT:-20}"  # cold emulator boot is slower than a warm reinstall
 INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pebble-tool's install timeout
 PIN_TIMES="${PIN_TIMES:-1}"  # 1 = cold-boot each scenario under faketime so it shows its own clock
@@ -133,7 +147,13 @@ for i in $STATES; do
   echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
-  out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
+  # STORE mode drops the numeric index so the filename is a clean, publish-ready
+  # <platform>_<name>.png (the <platform>_ prefix is what publish classifies on).
+  if [[ "$STORE" == "1" ]]; then
+    out="$OUT_DIR/${PLATFORM}_${name}.png"
+  else
+    out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
+  fi
   if install_app && pebble screenshot --emulator "$PLATFORM" "$out"; then
     echo "  Saved: $out"
   else
