@@ -86,6 +86,16 @@ const ThemeColors k_theme_dark[COLOR_THEME_COUNT] = {
     .state_danger = GColorFromHEX(0xFF0055), .state_inactive = GColorFromHEX(0xAAAAAA),
     .state_disabled = GColorFromHEX(0x555555),
   },
+  [COLOR_THEME_MONO] = {
+    .bg = GColorFromHEX(0x000000), .bg_inverted = GColorFromHEX(0xFFFFFF),
+    .text_default = GColorFromHEX(0xFFFFFF), .text_subtle = GColorFromHEX(0xAAAAAA),
+    .text_inverted = GColorFromHEX(0xFFFFFF),
+    .icon_default = GColorFromHEX(0xFFFFFF), .icon_subtle = GColorFromHEX(0xAAAAAA),
+    .border_subtle = GColorFromHEX(0x555555),
+    .state_positive = GColorFromHEX(0x00FF55), .state_warning = GColorFromHEX(0xFFFF00),
+    .state_danger = GColorFromHEX(0xFF0000), .state_inactive = GColorFromHEX(0xAAAAAA),
+    .state_disabled = GColorFromHEX(0x555555),
+  },
 };
 
 const ThemeColors k_theme_light[COLOR_THEME_COUNT] = {
@@ -168,5 +178,15 @@ const ThemeColors k_theme_light[COLOR_THEME_COUNT] = {
     .state_positive = GColorFromHEX(0x0000FF), .state_warning = GColorFromHEX(0xFFFF00),
     .state_danger = GColorFromHEX(0xAA5500), .state_inactive = GColorFromHEX(0xAA55AA),
     .state_disabled = GColorFromHEX(0xFFFFFF),
+  },
+  [COLOR_THEME_MONO] = {
+    .bg = GColorFromHEX(0xFFFFFF), .bg_inverted = GColorFromHEX(0x000000),
+    .text_default = GColorFromHEX(0x000000), .text_subtle = GColorFromHEX(0x555555),
+    .text_inverted = GColorFromHEX(0x000000),
+    .icon_default = GColorFromHEX(0x000000), .icon_subtle = GColorFromHEX(0x555555),
+    .border_subtle = GColorFromHEX(0xAAAAAA),
+    .state_positive = GColorFromHEX(0x00AA00), .state_warning = GColorFromHEX(0xFFAA00),
+    .state_danger = GColorFromHEX(0xFF0000), .state_inactive = GColorFromHEX(0x555555),
+    .state_disabled = GColorFromHEX(0xAAAAAA),
   },
 };
