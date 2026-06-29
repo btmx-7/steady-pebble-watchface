@@ -7,6 +7,7 @@ All notable changes to Steady, newest first.
 ## [3.2.2] - 2026-06-29
 - New: app-list menu icon for the watchface, shown next to its name in the watch launcher.
 - Improved: further Mono theme tuning — the time reads with muted outer digits and full-contrast inner digits, the date is stronger (black in light, white in dark), and the danger/warning/positive status colors were retuned for each mode.
+- Fix: App Store screenshots are now classified per watch model, so Time 2 and Round 2 each show their own screenshot instead of one being shown for both.
 
 ## [3.2.1] - 2026-06-29
 - Improved: refined the Mono theme — light mode now uses a light-gray background with a white widget ring and white trailing-minute digit; dark mode reads the leading hour in dark gray and the trailing minute in light gray.
