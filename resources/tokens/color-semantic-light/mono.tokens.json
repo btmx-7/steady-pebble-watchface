@@ -165,12 +165,12 @@
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1,
-          1,
-          1
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
         ],
         "alpha": 1,
-        "hex": "#FFFFFF"
+        "hex": "#555555"
       },
       "$extensions": {
         "com.figma.scopes": [
@@ -224,12 +224,12 @@
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          0,
-          0.6666666667,
+          0.3333333333333333,
+          1,
           0
         ],
         "alpha": 1,
-        "hex": "#00AA00"
+        "hex": "#55FF00"
       },
       "$extensions": {
         "com.figma.scopes": [
@@ -244,11 +244,11 @@
         "colorSpace": "srgb",
         "components": [
           1,
-          0.6666666667,
+          0.3333333333333333,
           0
         ],
         "alpha": 1,
-        "hex": "#FFAA00"
+        "hex": "#FF5500"
       },
       "$extensions": {
         "com.figma.scopes": [
@@ -262,12 +262,12 @@
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1,
+          0.6666666666666666,
           0,
           0
         ],
         "alpha": 1,
-        "hex": "#FF0000"
+        "hex": "#AA0000"
       },
       "$extensions": {
         "com.figma.scopes": [
