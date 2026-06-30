@@ -3,28 +3,22 @@
 #
 # Build + install + screenshot one PBW per demo scenario.
 #
-# Default behaviour (PIN_TIMES=1): each scenario pins its own wall-clock time
-# (see TIMES below) so the panel shows a heterogeneous set of hours. That needs
-# a fresh cold boot per scenario under faketime, because `pebble emu-set-time`
-# does NOT work here — pebble-tool's own source notes the QEMU 10 + pebble-emery
-# board ignores SetUTC/SetLocaltime and the watchface just follows the host RTC.
-# The only lever is faking the HOST clock for the QEMU process's whole lifetime
-# via `faketime`. That cold boot is slower than pebble-tool's install timeout,
-# so the faketime'd `pebble install` usually reports a timeout — which is fine
-# and expected: the QEMU it spawned keeps running with the faked clock latched
-# into its RTC, so we ignore that timeout and then do a normal WARM reinstall
-# into the now-booted emulator (which lands quickly and shows the right hour).
+# Each scenario's clock is BAKED INTO THE DEMO BUILD (demo_hour/demo_min in
+# src/c/demo/demo.c, rendered by main.c under DEMO_DATA), so the displayed time
+# does not depend on the host clock at all. That replaces the old, flaky
+# faketime approach: `pebble emu-set-time` is ignored by the QEMU/emery board,
+# and faking the host clock only worked if QEMU latched it at cold boot — which
+# was unreliable (the time reset to the host clock before the screenshot).
 #
-# SINGLE-CLOCK MODE (PIN_TIMES=0): boot the emulator ONCE, then warm-reinstall
-# each scenario into that already-running emulator. Faster (one cold boot total
-# instead of one per scenario) but every shot shows the same clock. Use it when
-# you only care about the glucose/slot/theme content, not the displayed hour.
+# Because the time is in the build, the emulator is cold-booted exactly ONCE and
+# every scenario is a fast WARM reinstall into it. No per-scenario cold boots,
+# so there's no ~5-scenario QEMU wedge ceiling anymore.
 #
 # Usage:
-#   ./scripts/screenshot-sweep.sh                  # emery, all 5 states (timed)
+#   ./scripts/screenshot-sweep.sh                  # emery, default states
 #   PLATFORM=gabbro ./scripts/screenshot-sweep.sh  # round
 #   STATES="0 3 4"  ./scripts/screenshot-sweep.sh  # subset
-#   PIN_TIMES=0 ./scripts/screenshot-sweep.sh      # one clock, faster (skip per-scenario times)
+#   STATES="0 1 2 3 4 5 6" ./scripts/screenshot-sweep.sh  # everything incl. mono
 #
 # STORE mode — capture the publish-ready App Store screenshots. Writes
 # resources/screenshots/<platform>_<name>.png (e.g. emery_in_range.png), which
@@ -34,12 +28,6 @@
 # no_data (red/light), stale (purple/dark).
 #   STORE=1 ./scripts/screenshot-sweep.sh                 # emery store set
 #   STORE=1 PLATFORM=gabbro ./scripts/screenshot-sweep.sh # round store set
-#
-# There are 5 scenarios (down from 8): cold-booting emery once per scenario
-# under faketime is what produces the per-state clocks, and ~5 cold boots is
-# the reliable ceiling — earlier 8-state sweeps wedged QEMU on the 6th cold
-# boot (splash-screen loop) no matter how long we waited for it. Keeping the
-# set at 5 sidesteps that entirely.
 
 set -euo pipefail
 
@@ -53,23 +41,10 @@ else
 fi
 BOOT_WAIT="${BOOT_WAIT:-20}"  # cold emulator boot is slower than a warm reinstall
 INSTALL_RETRIES="${INSTALL_RETRIES:-4}"  # emery/gabbro cold boot can outlast pebble-tool's install timeout
-PIN_TIMES="${PIN_TIMES:-1}"  # 1 = cold-boot each scenario under faketime so it shows its own clock
 
-# Keep these arrays aligned (by index) with demo_scenarios[] in src/c/demo/demo.c.
-# States 5-6 (mono_light/mono_dark) are NOT in the default STATES above — the
-# timed sweep cold-boots once per state and ~5 boots is the reliable ceiling, so
-# shoot the Mono pair on its own: STATES="5 6" ./scripts/screenshot-sweep.sh
+# Names align (by index) with demo_scenarios[] in src/c/demo/demo.c. The clock
+# for each is set there (demo_hour/demo_min), not here.
 NAMES=(in_range urgent_low high_alerts no_data stale mono_light mono_dark)
-TIMES=("00:07" "09:21" "20:34" "16:59" "11:38" "10:48" "14:25")
-
-HAVE_FAKETIME=0
-if [[ "$PIN_TIMES" == "1" ]]; then
-  if command -v faketime >/dev/null 2>&1; then
-    HAVE_FAKETIME=1
-  else
-    echo "Warning: PIN_TIMES=1 but faketime not found — screenshots will use the emulator's actual clock." >&2
-  fi
-fi
 
 mkdir -p "$OUT_DIR"
 
@@ -81,33 +56,11 @@ mkdir -p "$OUT_DIR"
 pebble kill >/dev/null 2>&1 || true
 pebble wipe >/dev/null 2>&1 || true
 
-# Warm-boot the emulator once, up front, so the per-scenario installs below are
-# fast warm reinstalls rather than slow cold boots. We can't boot the emulator
-# without an app to install, so build the first requested state and install it
-# (with retry, since this first install IS the cold boot). Skipped when pinning
-# times, because that mode deliberately cold-boots under faketime per scenario.
-first_state="${STATES%% *}"
-if [[ "$HAVE_FAKETIME" -ne 1 ]]; then
-  echo "Booting $PLATFORM (cold) before the sweep…"
-  DEMO_DATA=1 DEMO_STATE="$first_state" pebble build >/dev/null
-  for ((t = 1; t <= INSTALL_RETRIES; t++)); do
-    if pebble install --emulator "$PLATFORM"; then
-      break
-    fi
-    echo "  cold-boot install attempt $t/$INSTALL_RETRIES failed; waiting for the emulator to come up…" >&2
-    sleep "$BOOT_WAIT"
-  done
-fi
-
 # Warm reinstall into the already-running emulator — the reliable path. No
 # kill/wipe: that would tear down the warm emulator we want to reuse and force
-# another slow cold boot. Retry backoff grows (5s, 10s, 15s, …) instead of a
-# flat delay: when this follows a cold boot (PIN_TIMES=1), a still-booting
-# QEMU needs growing room to finish, not a fixed window that can run out
-# before a slower-than-usual boot (cold boot time isn't constant — it tends to
-# get slower deeper into a long sweep as the host accumulates load from prior
-# QEMU processes). Returns non-zero only if every attempt fails, so the
-# caller can skip the scenario instead of aborting the whole sweep.
+# another slow cold boot. Retry backoff grows (5s, 10s, 15s, …) so a
+# slower-than-usual boot still gets room to finish. Returns non-zero only if
+# every attempt fails, so the caller can skip the scenario instead of aborting.
 warm_install() {
   local t
   for ((t = 1; t <= INSTALL_RETRIES; t++)); do
@@ -121,30 +74,24 @@ warm_install() {
   return 1
 }
 
-# Install the freshly-built app for scenario $i (uses $time_str when pinning).
-install_app() {
-  if [[ "$HAVE_FAKETIME" -eq 1 && -n "$time_str" ]]; then
-    # Cold-boot a fresh QEMU under faketime so its RTC latches $time_str, then
-    # warm-install into it. The faketime'd cold install usually times out on
-    # confirmation (cold boot > pebble-tool's timeout), but the QEMU it spawned
-    # keeps running with the faked clock, so the warm_install below lands and
-    # the screenshot shows the right hour. The script's up-front `pebble wipe`
-    # already gave us a clean starting flash; per-scenario we only need to kill
-    # the previous QEMU so a fresh one re-reads the (newly faked) host clock.
-    pebble kill >/dev/null 2>&1 || true
-    sleep 2  # let the old QEMU process/ports fully release before rebooting
-    faketime "$(date +%Y-%m-%d) $time_str:00" pebble install --emulator "$PLATFORM" >/dev/null 2>&1 || true
-    sleep "$BOOT_WAIT"  # let the cold boot finish before the warm reinstall
+# Cold-boot the emulator once, up front, using the first requested state. This
+# first install IS the cold boot, so it gets the retry/backoff loop.
+first_state="${STATES%% *}"
+echo "Booting $PLATFORM (cold) before the sweep…"
+DEMO_DATA=1 DEMO_STATE="$first_state" pebble build >/dev/null
+for ((t = 1; t <= INSTALL_RETRIES; t++)); do
+  if pebble install --emulator "$PLATFORM"; then
+    break
   fi
-  warm_install
-}
+  echo "  cold-boot install attempt $t/$INSTALL_RETRIES failed; waiting for the emulator to come up…" >&2
+  sleep "$BOOT_WAIT"
+done
 
 for i in $STATES; do
   name="${NAMES[$i]:-state_$i}"
-  time_str="${TIMES[$i]:-}"
   echo ""
   echo "──────────────────────────────────────────"
-  echo "  State $i  —  $name  ($PLATFORM)${time_str:+ @ $time_str}"
+  echo "  State $i  —  $name  ($PLATFORM)"
   echo "──────────────────────────────────────────"
   DEMO_DATA=1 DEMO_STATE="$i" pebble build
   # STORE mode drops the numeric index so the filename is a clean, publish-ready
@@ -154,7 +101,7 @@ for i in $STATES; do
   else
     out="$OUT_DIR/${PLATFORM}_${i}_${name}.png"
   fi
-  if install_app && pebble screenshot --emulator "$PLATFORM" "$out"; then
+  if warm_install && pebble screenshot --emulator "$PLATFORM" "$out"; then
     echo "  Saved: $out"
   else
     echo "  WARNING: state $i ($name) failed after $INSTALL_RETRIES attempts — skipping" >&2
