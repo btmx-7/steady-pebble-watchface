@@ -49,7 +49,7 @@ Stale data shown in gray. Glucose display in mg/dL or mmol/L.
 | Pebble Round 2 (gabbro) | 260x260 | Circular |
 
 Pebble Time (basalt), Pebble 2 (diorite), and Pebble Time Round (chalk) are not
-yet designed for — support is planned for a future release.
+yet designed for. Support is planned for a future release.
 
 ## Settings
 
@@ -60,7 +60,7 @@ Configured via the Pebble app settings page:
 - Glucose display units (mg/dL or mmol/L)
 - Graph window (1, 2, or 3 hours)
 - Alert thresholds (low, high, urgent low, urgent high), each with its own vibration type
-- Color theme (8 options, Cyan is default) and light/dark/auto mode
+- Color theme (9 options, Cyan is default) and light/dark/auto mode
 
 ## Roadmap
 
