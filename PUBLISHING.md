@@ -119,41 +119,40 @@ pebble login --status
 
 ### Step 2: Publish to App Store
 Publishing is visible to everyone. Finish the pre-flight checklist first, in
-particular the release rebuild, so `build/Steady-watchface.pbw` is not the
+particular a clean shell (no `DEMO_DATA`), so `build/Steady-watchface.pbw` is not the
 demo build.
 
-A bare `pebble publish` works but auto-captures a single screenshot per
-platform. Use the full command with `--screenshots` shown below for the store
-set. The command will:
-1. Read metadata from `package.json`
-2. Read the built PBW from `build/Steady-watchface.pbw`
-3. Collect screenshots — either auto-captured from the emulator, or passed
-   explicitly with `--screenshots`. Each screenshot's platform is inferred
-   from its filename prefix (`emery_…`, `gabbro_…`); `--screenshots` files
-   whose prefix is not a platform are **rejected with an error**, so always
-   pass the prefixed files.
+`pebble publish` (pebble-tool 5.0.40) rebuilds the app itself, shows the PBW
+metadata (version, UUID, platforms), then asks where the screenshots come from.
+The command line flag `--screenshots` is not what it uses; the screenshot step
+is interactive:
 
-   > ⚠️ **Auto-capture does NOT produce the 5 use cases.** It captures only
-   > whatever the watchface is *currently showing* — one shot per platform,
-   > from the release PBW (no `DEMO_DATA`). It cannot cycle the demo
-   > scenarios. To ship the cyan/green/yellow/red/purple set, generate them
-   > first with `STORE=1 ./scripts/screenshot-sweep.sh` (+ `PLATFORM=gabbro`)
-   > and pass all 10 explicitly:
-
-   ```bash
-   pebble publish --screenshots \
-     resources/screenshots/emery_in_range.png \
-     resources/screenshots/emery_urgent_low.png \
-     resources/screenshots/emery_high_alerts.png \
-     resources/screenshots/emery_no_data.png \
-     resources/screenshots/emery_stale.png \
-     resources/screenshots/gabbro_in_range.png \
-     resources/screenshots/gabbro_urgent_low.png \
-     resources/screenshots/gabbro_high_alerts.png \
-     resources/screenshots/gabbro_no_data.png \
-     resources/screenshots/gabbro_stale.png
+1. Run `pebble publish`.
+2. At `Source [1-3]:` choose **2** (select local files). Option 1 auto-captures
+   one screenshot per platform and cannot cycle the 5 demo scenarios.
+3. At `File path:` enter **one path per line**, press Enter after each, and
+   finish with an empty line. Do not put several paths on one line or separate
+   them with commas: the whole line is read as a single file name.
    ```
-   (Each platform takes up to 5 screenshots; the order above sets display order.)
+   resources/screenshots/emery_in_range.png
+   resources/screenshots/emery_urgent_low.png
+   resources/screenshots/emery_high_alerts.png
+   resources/screenshots/emery_no_data.png
+   resources/screenshots/emery_stale.png
+   resources/screenshots/gabbro_in_range.png
+   resources/screenshots/gabbro_urgent_low.png
+   resources/screenshots/gabbro_high_alerts.png
+   resources/screenshots/gabbro_no_data.png
+   resources/screenshots/gabbro_stale.png
+   ```
+   Each platform takes up to 5 screenshots; the order sets display order. Each
+   file name must start with the platform (`emery_`, `gabbro_`).
+
+The command will:
+1. Read metadata from `package.json`
+2. Build the PBW (`build/Steady-watchface.pbw`). `DEMO_DATA` must not be set
+   in the shell, or the demo build ships.
+3. Collect screenshots as described above.
 4. Upload PBW + per-platform screenshots + metadata to the App Store
 
 > Screenshots can also be added/curated per platform afterwards via
