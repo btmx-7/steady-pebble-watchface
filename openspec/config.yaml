@@ -51,8 +51,8 @@ context: |
   - RESOURCE_ID_MATERIAL_SYMBOLS_16: Material Symbols Rounded 16px (icons in slots and status bar)
   - FONT_KEY_LECO_36_BOLD_NUMBERS: Dashboard single-row time (includes colon)
   - FONT_KEY_GOTHIC_24_BOLD: slot value text
-  - FONT_KEY_GOTHIC_18_BOLD: secondary values
-  - FONT_KEY_GOTHIC_14: unit labels, day/month, stale row
+  - FONT_KEY_GOTHIC_18_BOLD: secondary values, day/month
+  - FONT_KEY_GOTHIC_14: unit labels, stale row
 
   Glucose zone color scheme (do not change without a proposal):
   - Urgent low/high: GColorRed
