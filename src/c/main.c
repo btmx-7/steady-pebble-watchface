@@ -1586,14 +1586,14 @@ static void main_window_load(Window *window) {
   s_simple_day_layer = text_layer_create(GRect(4, 103, 24, 22));
   text_layer_set_background_color(s_simple_day_layer, GColorClear);
   text_layer_set_text_color(s_simple_day_layer, prv_date_text_color());
-  text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_day_layer));
 
   s_simple_month_layer = text_layer_create(GRect(172, 103, 24, 22));
   text_layer_set_background_color(s_simple_month_layer, GColorClear);
   text_layer_set_text_color(s_simple_month_layer, prv_date_text_color());
-  text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentLeft);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_month_layer));
 
@@ -1616,14 +1616,14 @@ static void main_window_load(Window *window) {
   s_dash_day_layer = text_layer_create(GRect(172, 70, 24, 22));
   text_layer_set_background_color(s_dash_day_layer, GColorClear);
   text_layer_set_text_color(s_dash_day_layer, prv_date_text_color());
-  text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_dash_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_day_layer));
 
   s_dash_month_layer = text_layer_create(GRect(172, 92, 24, 22));
   text_layer_set_background_color(s_dash_month_layer, GColorClear);
   text_layer_set_text_color(s_dash_month_layer, prv_date_text_color());
-  text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_dash_month_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_month_layer));
 
