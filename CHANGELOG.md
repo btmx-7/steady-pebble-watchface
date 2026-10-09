@@ -4,6 +4,10 @@ All notable changes to Steady, newest first.
 
 ## [Unreleased]
 
+## [3.2.3] - 2026-10-09
+- Fix: the watchface no longer vibrates when Bluetooth disconnects. The watch's own Bluetooth alert setting now decides (#32).
+- Improved: the day and month numbers use a bigger font (18 px instead of 14 px) in both layouts on Time 2 and Round 2 (#30).
+
 ## [3.2.2] - 2026-06-29
 - New: app-list menu icon for the watchface, shown next to its name in the watch launcher.
 - Improved: further Mono theme tuning — the time reads with muted outer digits and full-contrast inner digits, the date is stronger (black in light, white in dark), and the danger/warning/positive status colors were retuned for each mode.

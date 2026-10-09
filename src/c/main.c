@@ -1183,13 +1183,11 @@ static void prv_health_handler(HealthEventType event, void *context) {
 
 // ─── Bluetooth Callback ──────────────────────────────────────────────────────
 
+// No vibration here: the system already buzzes on disconnect according to the
+// user's own Bluetooth alert setting, and a watchface buzz ignores that choice.
 static void bluetooth_callback(bool connected) {
+  (void)connected;
   update_display();
-  if (!connected) {
-    static const uint32_t segs[] = { 200, 100, 200 };
-    VibePattern pat = { .durations = segs, .num_segments = 3 };
-    vibes_enqueue_custom_pattern(pat);
-  }
 }
 
 static void battery_callback(BatteryChargeState state) {
@@ -1296,11 +1294,11 @@ void prv_layout_for_bounds(GRect bounds) {
 
       // Day/Month: vertical center flanking time (T2 hugs screen edges)
       if (s_simple_day_layer) {
-        layer_set_frame(text_layer_get_layer(s_simple_day_layer), GRect(4, 106, 18, 16));
+        layer_set_frame(text_layer_get_layer(s_simple_day_layer), GRect(4, 103, 24, 22));
         text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentRight);
       }
       if (s_simple_month_layer) {
-        layer_set_frame(text_layer_get_layer(s_simple_month_layer), GRect(178, 106, 18, 16));
+        layer_set_frame(text_layer_get_layer(s_simple_month_layer), GRect(172, 103, 24, 22));
         text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentLeft);
       }
 
@@ -1354,11 +1352,11 @@ void prv_layout_for_bounds(GRect bounds) {
       if (s_simple_bt_layer)
         layer_set_frame(text_layer_get_layer(s_simple_bt_layer), GRect(52, 192, 16, 16));
       if (s_simple_day_layer) {
-        layer_set_frame(text_layer_get_layer(s_simple_day_layer), GRect(48, 52, 24, 16));
+        layer_set_frame(text_layer_get_layer(s_simple_day_layer), GRect(46, 49, 28, 22));
         text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentCenter);
       }
       if (s_simple_month_layer) {
-        layer_set_frame(text_layer_get_layer(s_simple_month_layer), GRect(188, 52, 24, 16));
+        layer_set_frame(text_layer_get_layer(s_simple_month_layer), GRect(186, 49, 28, 22));
         text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentCenter);
       }
     }
@@ -1392,9 +1390,9 @@ void prv_layout_for_bounds(GRect bounds) {
       if (s_dash_bt_layer)
         layer_set_frame(text_layer_get_layer(s_dash_bt_layer), GRect(4, 80, 16, 16));
       if (s_dash_day_layer)
-        layer_set_frame(text_layer_get_layer(s_dash_day_layer), GRect(176, 74, 20, 14));
+        layer_set_frame(text_layer_get_layer(s_dash_day_layer), GRect(172, 70, 24, 22));
       if (s_dash_month_layer)
-        layer_set_frame(text_layer_get_layer(s_dash_month_layer), GRect(176, 94, 20, 14));
+        layer_set_frame(text_layer_get_layer(s_dash_month_layer), GRect(172, 92, 24, 22));
 
       // CGM panel: y=130..224
       // Graph: 120px wide
@@ -1431,9 +1429,9 @@ void prv_layout_for_bounds(GRect bounds) {
       if (s_dash_bt_layer)
         layer_set_frame(text_layer_get_layer(s_dash_bt_layer), GRect(10, 94, 16, 16));
       if (s_dash_day_layer)
-        layer_set_frame(text_layer_get_layer(s_dash_day_layer), GRect(234, 88, 20, 14));
+        layer_set_frame(text_layer_get_layer(s_dash_day_layer), GRect(228, 86, 24, 22));
       if (s_dash_month_layer)
-        layer_set_frame(text_layer_get_layer(s_dash_month_layer), GRect(234, 108, 20, 14));
+        layer_set_frame(text_layer_get_layer(s_dash_month_layer), GRect(228, 108, 24, 22));
 
       if (s_graph_layer)
         layer_set_frame(s_graph_layer, GRect(30, 148, 150, 76));
@@ -1585,17 +1583,17 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_simple_music_layer, ICON_MUSIC);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_music_layer));
 
-  s_simple_day_layer = text_layer_create(GRect(4, 106, 18, 16));
+  s_simple_day_layer = text_layer_create(GRect(4, 103, 24, 22));
   text_layer_set_background_color(s_simple_day_layer, GColorClear);
   text_layer_set_text_color(s_simple_day_layer, prv_date_text_color());
-  text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_font(s_simple_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_simple_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_day_layer));
 
-  s_simple_month_layer = text_layer_create(GRect(178, 106, 18, 16));
+  s_simple_month_layer = text_layer_create(GRect(172, 103, 24, 22));
   text_layer_set_background_color(s_simple_month_layer, GColorClear);
   text_layer_set_text_color(s_simple_month_layer, prv_date_text_color());
-  text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_font(s_simple_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_simple_month_layer, GTextAlignmentLeft);
   layer_add_child(s_window_layer, text_layer_get_layer(s_simple_month_layer));
 
@@ -1615,17 +1613,17 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_dash_bt_layer, GTextAlignmentCenter);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_bt_layer));
 
-  s_dash_day_layer = text_layer_create(GRect(176, 74, 20, 14));
+  s_dash_day_layer = text_layer_create(GRect(172, 70, 24, 22));
   text_layer_set_background_color(s_dash_day_layer, GColorClear);
   text_layer_set_text_color(s_dash_day_layer, prv_date_text_color());
-  text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_font(s_dash_day_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_dash_day_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_day_layer));
 
-  s_dash_month_layer = text_layer_create(GRect(176, 94, 20, 14));
+  s_dash_month_layer = text_layer_create(GRect(172, 92, 24, 22));
   text_layer_set_background_color(s_dash_month_layer, GColorClear);
   text_layer_set_text_color(s_dash_month_layer, prv_date_text_color());
-  text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_font(s_dash_month_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(s_dash_month_layer, GTextAlignmentRight);
   layer_add_child(s_window_layer, text_layer_get_layer(s_dash_month_layer));
 

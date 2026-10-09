@@ -215,7 +215,7 @@ Last known glucose value stored in `persist_write_int(KEY_GLUCOSE_VALUE, value)`
 | High (181–250) | Yellow border | 1× short pulse | Once per event |
 | Urgent High (> 250) | Red flash, "⚠ URGENT HIGH" | 3× long pulse | Every 5 min until dismissed |
 | Stale Data > 15min | Gray glucose, "⚠ NO DATA" | 2× medium pulse | Once |
-| Bluetooth disconnect | BT icon flashes | 1× short pulse | Once |
+| Bluetooth disconnect | BT icon changes | None (system Bluetooth alert setting applies) | Once |
 
 ---
 
