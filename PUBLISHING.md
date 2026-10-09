@@ -2,19 +2,28 @@
 
 ## Status
 
-Build: ✓ Complete (Steady-watchface.pbw, 154KB)
-Screenshots: 5 store use cases per platform (regenerate via `STORE=1 scripts/screenshot-sweep.sh`)
-Metadata: ✓ Complete (package.json)
-SDK: ⚠ Requires installation
+Version: 3.2.3 (see `package.json` and `CHANGELOG.md`)
+Platforms: Time 2 (emery) and Round 2 (gabbro)
+Screenshots: 5 store use cases per platform. Regenerate them with `STORE=1 scripts/screenshot-sweep.sh` after any visual change (the files in the repo predate the 3.2.3 font change).
+
+Before every publish, run the checklist in "Pre-flight checklist" below.
+
+---
+
+## Pre-flight checklist
+
+1. `package.json` `version` matches the top entry of `CHANGELOG.md`.
+2. Shell has no `CC`, `CXX`, `LDFLAGS` or `CPPFLAGS` exports. Check with `env | grep -E '^(CC|CXX|LDFLAGS|CPPFLAGS)='`. If any print, run `unset CC CXX LDFLAGS CPPFLAGS`. A set `CC` overrides the ARM cross-compiler and `pebble build` fails with "Could not find gcc/g++ (only Clang)".
+3. Screenshots are regenerated for the current UI (see below), then **rebuild a release PBW**: `pebble clean && pebble build`. The screenshot sweep leaves a `DEMO_DATA=1` build in `build/`. Never publish that file, it contains fake glucose data.
+4. `pebble login --status` shows you are logged in.
 
 ---
 
 ## What's Ready
 
 ### Build Artifact
-- **File**: `build/Steady-watchface.pbw` (154 KB)
-- **Platforms**: emery, gabbro, basalt, diorite, chalk (all 5 platforms)
-- **Last built**: 2026-04-16 19:09
+- **File**: `build/Steady-watchface.pbw` (rebuild with `pebble clean && pebble build`)
+- **Platforms**: emery, gabbro (`targetPlatforms` in `package.json`)
 
 ### Screenshots (in `resources/screenshots/`)
 
@@ -45,43 +54,51 @@ STORE=1 PLATFORM=gabbro ./scripts/screenshot-sweep.sh # gabbro → resources/scr
 > names had the prefix `screenshot`, which matches no platform, so publish
 > could not map them and the wrong shot showed for a given watch.
 
-> The legacy `emery_simple_dark.png` / `gabbro_simple_dark.png` (a single
-> cyan/dark shot) and the stale `states/` set predate this 5-case scheme;
-> remove them once the set above is regenerated.
+> The files currently committed in `resources/screenshots/` are numbered
+> (`emery_0_in_range.png … emery_4_stale.png`, same for gabbro). That is the
+> output of the sweep **without** `STORE=1`, and it was captured before the
+> 3.2.3 font change (bigger day and month). Do not pass those names to
+> `pebble publish`. Regenerate with `STORE=1` (names without the index), check a
+> couple of images, then commit them and delete the numbered copies. The
+> `states/` folder is an older set that publish does not use.
+>
+> The sweep builds with `DEMO_DATA=1` and does not restore a release build.
+> Run `pebble clean && pebble build` afterwards, before `pebble publish`.
 
 ### Metadata
 - **Display Name**: Steady
 - **Short Description** (package.json): "A clean watchface for Pebble Time 2 and Round 2. Large clock, 4 configurable slots, 9 color themes, light/dark mode, and a built-in CGM widget. Glucose monitoring that fits in."
 - **Long Description** (package.json): Clean watchface framing with CGM as a natural widget, not a medical device identity
 - **UUID**: 552fd91e-ad93-4d0f-ae44-74bc9d3108d6 (unchanged)
-- **Version**: 1.0.0
-- **Target Platforms**: Time 2 (emery), Round 2 (gabbro), Time (basalt), Steel (diorite), Round (chalk)
+- **Version**: 3.2.3 (from `package.json`)
+- **Target Platforms**: Time 2 (emery), Round 2 (gabbro). Pebble Time, Steel and Round are not declared in `targetPlatforms` yet.
 
 ---
 
 ## Prerequisites: Pebble SDK Installation
 
-The `pebble publish` command requires the **Pebble SDK** (v4.x or compatible).
+The `pebble publish` command needs `pebble-tool` and an installed SDK. This
+guide was last checked with pebble-tool 5.0.40 and SDK 4.9.169.
 
 ### Check if Installed
 ```bash
 pebble --version
+pebble sdk list
 ```
 
-If this fails, install the SDK:
-
-### macOS (using Homebrew)
+If `pebble` is missing, install the tool, then an SDK:
 ```bash
-brew install pebble-sdk
+uv tool install pebble-tool
+pebble sdk install latest
 ```
 
-### Other Platforms
-Download from https://github.com/pebble/pebble-sdk-release or use the official installer.
+Update the tool with `uv tool upgrade pebble-tool`. On macOS this compiles
+`gevent`, so it needs the Xcode Command Line Tools (`xcode-select --install`)
+and a shell without `CC`/`CXX`/`LDFLAGS`/`CPPFLAGS` exports (see the
+pre-flight checklist).
 
-Once installed, verify:
-```bash
-pebble --version
-```
+Run `pebble publish --help` to see the options your installed version
+supports; they can change between releases.
 
 ---
 
@@ -101,11 +118,13 @@ pebble login --status
 ```
 
 ### Step 2: Publish to App Store
-```bash
-pebble publish
-```
+Publishing is visible to everyone. Finish the pre-flight checklist first, in
+particular the release rebuild, so `build/Steady-watchface.pbw` is not the
+demo build.
 
-The command will:
+A bare `pebble publish` works but auto-captures a single screenshot per
+platform. Use the full command with `--screenshots` shown below for the store
+set. The command will:
 1. Read metadata from `package.json`
 2. Read the built PBW from `build/Steady-watchface.pbw`
 3. Collect screenshots — either auto-captured from the emulator, or passed
@@ -156,7 +175,9 @@ Visit the returned URL (or check https://apps.repebble.com) and confirm:
 - ✓ Screenshots display correctly **and** match the connected platform (Time 2 shows `emery_*`, Round 2 shows `gabbro_*`)
 - ✓ Short description visible
 - ✓ Long description complete
-- ✓ Platform list includes: Time 2, Round 2, Time, Steel, Round
+- ✓ Platform list includes: Time 2, Round 2 (and no other models)
+- ✓ Version shows 3.2.3 and the screenshots show the bigger day and month text
+- ✓ Install the published face once on a watch or emulator and confirm it shows no demo data
 - ✓ Author: "btmx-7"
 
 ---
@@ -167,7 +188,7 @@ Visit the returned URL (or check https://apps.repebble.com) and confirm:
 | Field | Value |
 |-------|-------|
 | App Name | Steady |
-| Version | 1.0.0 |
+| Version | 3.2.3 |
 | UUID | 552fd91e-ad93-4d0f-ae44-74bc9d3108d6 |
 | Category | Health / Utilities |
 | Author | btmx-7 |
@@ -175,9 +196,9 @@ Visit the returned URL (or check https://apps.repebble.com) and confirm:
 ### Supported Platforms
 - Pebble Time 2 (emery) — 200×228 color e-paper
 - Pebble Round 2 (gabbro) — 260×260 circular color e-paper
-- Pebble Time (basalt) — 144×168 color
-- Pebble Steel (diorite) — 144×168 rectangular
-- Pebble Round (chalk) — 180×180 circular
+
+Pebble Time (basalt), Pebble 2 (diorite) and Pebble Time Round (chalk) are not
+declared in `targetPlatforms` and not officially supported yet.
 
 ### Feature Summary
 - Clean watchface design. Large clock and 4 configurable widget slots.
@@ -241,19 +262,35 @@ pebble build
 ```
 
 ### Screenshots not uploading, or wrong screenshot shown for a platform
-Check that these files exist, are valid PNG, and keep their `<platform>_`
-filename prefix (publish maps screenshots to platforms by that prefix):
-- `resources/screenshots/emery_simple_dark.png` (Time 2)
-- `resources/screenshots/gabbro_simple_dark.png` (Round 2)
+Check that the 10 files from Step 2 exist (`ls resources/screenshots/`), are
+valid PNG, and keep their `<platform>_` filename prefix (publish maps
+screenshots to platforms by that prefix). If you only see numbered names like
+`emery_0_in_range.png`, you ran the sweep without `STORE=1`; run it again with
+`STORE=1`.
+
+### "Could not find gcc/g++ (only Clang)" during `pebble build`
+A `CC` (usually `CC=clang`) exported in your shell overrides the ARM
+cross-compiler. Run `unset CC CXX LDFLAGS CPPFLAGS` and build again. Remove the
+export from your shell config (`~/.zshrc`, `~/.zprofile`, or a mise config) so
+it does not come back.
+
+### `uv tool upgrade pebble-tool` fails with "C compiler cannot create executables"
+Same cause as above (`CC`/`LDFLAGS` exports), or broken Command Line Tools. Run
+`env -u CC -u CXX -u LDFLAGS -u CPPFLAGS uv tool upgrade pebble-tool`. If it
+still fails, run `xcode-select --install`.
+
+### `pebble install` says "App install succeeded" after a failed build
+`pebble install` reuses the last PBW in `build/`. Make sure `pebble build`
+finished successfully before you trust an install.
 
 ---
 
 ## Next Steps (Post-Publishing)
 
 1. Share app link in Pebble community forums
-2. Update personal Pebble app store listing with release notes
+2. Update personal Pebble app store listing with release notes (copy the newest section of `CHANGELOG.md`)
 3. Monitor community feedback for bug reports
-4. Plan v2.1 with deferred features: light mode, color themes, audio indicator
+4. Commit regenerated screenshots, so the repo matches what the store shows
 
 ---
 
